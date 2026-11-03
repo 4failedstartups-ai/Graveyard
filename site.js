@@ -17,11 +17,11 @@ settings:{site_name:"The Startup Graveyard",tagline:"A record of the Indian star
  terms_title:"Terms of Use",terms_intro:"The rules for using this website.",
  privacy_title:"Privacy Policy",privacy_intro:"What we collect, why we collect it and how we protect it.",
  legal_updated:"",contact_email:"hello@example.com",contact_phone:"",address:"",
- linkedin:"",twitter:"",instagram:"",facebook:"",youtube:"",discord:"",blog:"",whatsapp:"",contact_form_url:"",logo_url:"gy-mark.png",
+ linkedin:"",twitter:"",instagram:"",facebook:"",youtube:"",discord:"",blog:"",whatsapp:"",contact_form_url:"",logo_url:"gy-mark.png",support_title:"Buy me a beer",support_intro:"Good things take support. Raise a glass to the people keeping the graveyard open.",support_api_url:"",support_message:"",
  footer_blurb:"A record of the startups that didn't make it, and the lessons they left behind.",copyright:"© 2026 The Startup Graveyard. All rights reserved."},
 nav:[{Label:"Home",URL:"index.html",Location:"header",Order:1},{Label:"Graveyard",URL:"graveyard.html",Location:"both",Group:"Directories",Order:2},
  {Label:"About",URL:"about.html",Location:"both",Group:"Company",Order:3},{Label:"Team",URL:"team.html",Location:"both",Group:"Company",Order:4},
- {Label:"Contact",URL:"contact.html",Location:"both",Group:"Company",Order:5},{Label:"Terms",URL:"terms.html",Location:"footer",Group:"Resources",Order:6},
+ {Label:"Contact",URL:"contact.html",Location:"both",Group:"Company",Order:5},{Label:"Buy me a beer",URL:"support.html",Location:"both",Group:"Company",Order:5.5},{Label:"Terms",URL:"terms.html",Location:"footer",Group:"Resources",Order:6},
  {Label:"Privacy",URL:"privacy.html",Location:"footer",Group:"Resources",Order:7}],
 highlights:[{Value:"auto:startups",Label:"Startups buried",Order:1},{Value:"auto:avglife",Label:"Avg. lifespan",Order:2},{Value:"100%",Label:"Free to browse",Order:3}],
 team:[{Name:"Founder Name",Role:"Founder",Bio:"Edit this in the Team tab of your Google Sheet.",Order:1}],
@@ -49,6 +49,7 @@ function md(t){const o=[];let ul=false;String(t||"").split(/\r?\n/).forEach(l=>{
  if(ul)o.push("</ul>");return o.join("")}
 function drive(u){u=clean(u);if(!u)return"";const m=u.match(/\/d\/([\w-]+)/)||u.match(/id=([\w-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w600`:u}
 const initials=n=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
+function loadJs(src){return new Promise(res=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=res;document.head.appendChild(s)})}
 function loadScript(src){return new Promise((res,rej)=>{if(window.Papa)return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 
 function tab(name){
@@ -68,6 +69,7 @@ async function getSettings(){const d=await get("settings");const s=Object.assign
 function head(){
  const add=(tag,attrs)=>{const e=document.createElement(tag);Object.assign(e,attrs);document.head.appendChild(e)};
  add("link",{rel:"stylesheet",href:"site.css"});
+ if(/^(home|support)$/.test(document.body.dataset.page||""))["gazette.css","support.css"].forEach(h=>add("link",{rel:"stylesheet",href:h}));
  add("link",{rel:"icon",type:"image/png",sizes:"48x48",href:"favicon-48.png"});
  add("link",{rel:"icon",type:"image/png",sizes:"32x32",href:"favicon-32.png"});
  add("link",{rel:"apple-touch-icon",href:"apple-touch-icon.png"});
@@ -154,7 +156,7 @@ async function homePage(S,P,H){
  <div class="ul-cta"><a class="ul-btn" href="${esc(url(S.cta1_url))}">${esc(S.cta1_label)}</a>${S.cta2_label?`<a class="ul-btn ghost" href="${esc(url(S.cta2_url))}">${esc(S.cta2_label)}</a>`:""}</div><div class="ul-tape" id="ulTape" hidden><div class="ul-tape-in" id="ulTapeIn"></div></div></div></section>
  <div class="ul-wrap" style="padding-top:60px"><div class="ul-stats rv" id="ulStats">${stats.map(r=>`<div class="ul-stat"><b data-v="${esc(r.Value)}">${/^auto:/.test(r.Value)?"…":esc(r.Value)}</b><span>${esc(r.Label)}</span></div>`).join("")}</div></div>
  <section class="ul-sec"><div class="ul-wrap"><div class="ul-eyebrow">Explore</div><h2>Everything in one place</h2><div class="ul-grid">${cards.map(r=>`<a class="ul-card rv" href="${esc(url(clean(r.Link)||"#"))}"><h3>${esc(r.Heading)}</h3><p>${inline(r.Body)}</p><span class="ul-more">Open →</span></a>`).join("")}</div></div></section>
- <section class="ul-sec" id="ulFeat" hidden><div class="ul-wrap"><div class="ul-head"><div><div class="ul-eyebrow">Recently buried</div><h2>Latest postmortems</h2></div><a class="ul-link" href="graveyard.html">View all →</a></div><div class="ul-grid" id="ulFeatGrid"></div></div></section>`;
+ <div id="gzAnchor"></div>`;
  return out;
 }
 async function homeData(){
@@ -170,8 +172,8 @@ async function homeData(){
  if(tp&&rows.length){const h=rows.slice(0,80).map(r=>`<span><b>${esc(r["Startup Name"])}</b>${esc(clean(r["Failure Reason"])||"Shut down")}${clean(r["Shutdown Year"])?" · "+esc(clean(r["Shutdown Year"])):""}</span>`).join("");tp.innerHTML=h+h;$("#ulTape").hidden=false;
   const speed=()=>{const w=tp.scrollWidth/2;if(w)tp.style.animationDuration=Math.max(w/38,24)+"s"};speed();
   (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(speed)}
- const f=rows.slice().sort((a,b)=>(parseInt(b["Shutdown Year"])||0)-(parseInt(a["Shutdown Year"])||0)).slice(0,3);
- if(f.length){$("#ulFeat").hidden=false;$("#ulFeatGrid").innerHTML=f.map(r=>`<a class="ul-card rv" href="graveyard.html"><span class="ul-meta">${esc(clean(r.Sector))} · ${esc(clean(r["Founded In"]))}–${esc(clean(r["Shutdown Year"]))}</span><h3>${esc(r["Startup Name"])}</h3><p>${esc(clean(r["Epitaph / Key Lesson"])||r["Tagline / Description"])}</p><span class="ul-more">${esc(clean(r["Failure Reason"])||"Shut down")}</span></a>`).join("")}
+
+ return rows;
 }
 function fx(){
  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);e.target.querySelectorAll&&e.target.querySelectorAll("b[data-v]").forEach(count)}}),{threshold:.12});
@@ -199,7 +201,9 @@ async function boot0(){
  document.body.classList.add("ul-page");
  const root=$("#ul-root");
  const T=key==="home"?S.site_name:(S[key+"_title"]||key)+" — "+S.site_name;document.title=T;
- if(key==="home"){root.innerHTML=await homePage(S,P,hl||DEF.highlights);fx();homeData()}
+ if(key==="home"){root.innerHTML=await homePage(S,P,hl||DEF.highlights);fx();
+  const rows=await homeData();await loadJs("gazette.js");await loadJs("support.js");GZ.home(rows,S,root);GYSupport.mount($("#gzSupport"),S)}
+ else if(key==="support"){root.innerHTML=pageHead(S,"support")+'<div class="ul-wrap"><div id="gzSupport" class="gz-solo"></div></div>';fx();await loadJs("support.js");GYSupport.mount($("#gzSupport"),S)}
  else if(key==="team"){root.innerHTML=teamPage(S,team||DEF.team);fx()}
  else if(key==="contact"){root.innerHTML=contactPage(S);wireForm(S);fx()}
  else{root.innerHTML=textPage(key,S,P);fx()}
