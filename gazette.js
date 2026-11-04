@@ -11,6 +11,7 @@ const fine=matchMedia("(hover:hover) and (pointer:fine)").matches;
 const yr=r=>({b:parseInt(r["Founded In"]),d:parseInt(r["Shutdown Year"])});
 const causes=r=>cl(r["Failure Reason"]).split(/[;|,]/).map(s=>pc(s)).filter(Boolean);
 const nm=r=>cl(r["Startup Name"]);
+const lk=r=>"graveyard.html#s="+encodeURIComponent(nm(r));
 const epi=r=>cl(r["Epitaph / Key Lesson"]);
 const tick=(el,to,ms=900,pre="",suf="")=>{if(reduce){el.textContent=pre+to.toLocaleString("en-IN")+suf;return}
   let t0;const f=t=>{t0=t0||t;const p=Math.min((t-t0)/ms,1);el.textContent=pre+Math.round(to*(1-Math.pow(1-p,3))).toLocaleString("en-IN")+suf;if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)};
@@ -71,7 +72,7 @@ function wireFront(rows){
     ${epi(r)?`<blockquote>“${esc(epi(r))}”</blockquote>`:""}
     <div class="gz-cod"><span class="gz-stamp">Cause of death</span>${cs.length?cs.map(c=>`<span class="gz-chip">${esc(c)}</span>`).join(""):'<span class="gz-chip">Unknown</span>'}</div>
     <div class="gz-act"><button class="gz-candle" type="button" aria-pressed="false"><svg viewBox="0 0 24 34"><rect x="8" y="14" width="8" height="18" rx="2" class="wx"/><path class="fl" d="M12 11c4-5 4-9 0-14-4 5-4 9 0 14z"/></svg><span>Light a candle</span></button>
-    <button class="gz-next" type="button">Another obituary →</button><a class="ul-link" href="graveyard.html">Full autopsy →</a></div><div class="gz-rip-msg" aria-live="polite"></div>`;
+    <button class="gz-next" type="button">Another obituary →</button><a class="ul-link" href="${lk(r)}">Full autopsy →</a></div><div class="gz-rip-msg" aria-live="polite"></div>`;
     $(".gz-candle",box).onclick=function(){const on=this.getAttribute("aria-pressed")!=="true";this.setAttribute("aria-pressed",on);
       $("span",this).textContent=on?"Candle lit":"Light a candle";$(".gz-rip-msg",box).textContent=on?"Rest in peace, "+pc(nm(r))+".":"";if(on)embers(this)};
     $(".gz-next",box).onclick=()=>{i=(i+1)%list.length;draw(1)};
@@ -85,7 +86,7 @@ function wireFront(rows){
   const step=full.length>12?2:1;
   ch.innerHTML=full.map((y,k)=>{const n=(by[y]||[]).length;return `<button type="button" class="gz-col${y===peak?" peak":""}${n?"":" zero"}" data-y="${y}" style="--h:${n/mx*100}%;--k:${k}" aria-label="${y}: ${n} startups"><span class="n">${n||""}</span><i></i><span class="y">${k%step?"":"’"+String(y).slice(-2)}</span></button>`}).join("");
   const showYear=y=>{const rs=by[y]||[];$$(".gz-col",ch).forEach(b=>b.classList.toggle("on",+b.dataset.y===y));
-    $("#gzYearBox").innerHTML=`<p><b>${y}</b> · ${rs.length} startup${rs.length===1?"":"s"} shut down${rs.length?":":"."}</p><div class="gz-pills">${rs.slice(0,14).map(r=>`<span>${esc(pc(nm(r)))}</span>`).join("")}${rs.length>14?`<span class="more">+${rs.length-14} more</span>`:""}</div>`};
+    $("#gzYearBox").innerHTML=`<p><b>${y}</b> · ${rs.length} startup${rs.length===1?"":"s"} shut down${rs.length?":":"."}</p><div class="gz-pills">${rs.slice(0,14).map(r=>`<a href="${lk(r)}">${esc(pc(nm(r)))}</a>`).join("")}${rs.length>14?`<a class="more" href="graveyard.html">+${rs.length-14} more</a>`:""}</div>`};
   ch.onclick=e=>{const b=e.target.closest(".gz-col");if(b)showYear(+b.dataset.y)};
   showYear(peak);
 }
@@ -103,7 +104,7 @@ function wireAutopsy(rows){
   const mx=top[0][1].length;
   el.innerHTML=top.map(([c,rs],i)=>`<div class="gz-cause" style="--i:${i}"><button type="button" aria-expanded="false"><span class="rk">${String(i+1).padStart(2,"0")}</span><span class="nm">${esc(c)}</span>
    <span class="bar"><i style="--w:${rs.length/mx*100}%"></i></span><span class="ct">${rs.length}</span><span class="pc">${Math.round(rs.length/rows.length*100)}%</span></button>
-   <div class="vic"><div>${rs.slice(0,12).map(r=>`<span>${esc(pc(nm(r)))}</span>`).join("")}${rs.length>12?`<span class="more">+${rs.length-12} more</span>`:""}</div></div></div>`).join("");
+   <div class="vic"><div>${rs.slice(0,12).map(r=>`<a href="${lk(r)}">${esc(pc(nm(r)))}</a>`).join("")}${rs.length>12?`<a class="more" href="graveyard.html">+${rs.length-12} more</a>`:""}</div></div></div>`).join("");
   el.onclick=e=>{const b=e.target.closest(".gz-cause button");if(!b)return;const p=b.parentNode,on=!p.classList.contains("open");
     $$(".gz-cause.open",el).forEach(x=>{x.classList.remove("open");$("button",x).setAttribute("aria-expanded","false")});if(on){p.classList.add("open");b.setAttribute("aria-expanded","true")}};
 }

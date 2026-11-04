@@ -16,7 +16,7 @@ settings:{site_name:"The Startup Graveyard",tagline:"A record of the Indian star
  contact_title:"Get in touch",contact_intro:"A correction, a story or a postmortem to share — we read everything.",
  terms_title:"Terms of Use",terms_intro:"The rules for using this website.",
  privacy_title:"Privacy Policy",privacy_intro:"What we collect, why we collect it and how we protect it.",
- legal_updated:"",contact_email:"hello@example.com",contact_phone:"",address:"",
+ legal_updated:"",contact_email:"",contact_phone:"",address:"",
  linkedin:"",twitter:"",instagram:"",facebook:"",youtube:"",discord:"",blog:"",whatsapp:"",contact_form_url:"",logo_url:"gy-mark.png",support_title:"Buy me a beer",support_intro:"Good things take support. Raise a glass to the people keeping the graveyard open.",support_api_url:"",support_message:"",
  footer_blurb:"A record of the startups that didn't make it, and the lessons they left behind.",copyright:"© 2026 The Startup Graveyard. All rights reserved."},
 nav:[{Label:"Home",URL:"index.html",Location:"header",Order:1},{Label:"Graveyard",URL:"graveyard.html",Location:"both",Group:"Directories",Order:2},
@@ -24,12 +24,13 @@ nav:[{Label:"Home",URL:"index.html",Location:"header",Order:1},{Label:"Graveyard
  {Label:"Contact",URL:"contact.html",Location:"both",Group:"Company",Order:5},{Label:"Buy me a beer",URL:"support.html",Location:"both",Group:"Company",Order:5.5},{Label:"Terms",URL:"terms.html",Location:"footer",Group:"Resources",Order:6},
  {Label:"Privacy",URL:"privacy.html",Location:"footer",Group:"Resources",Order:7}],
 highlights:[{Value:"auto:startups",Label:"Startups buried",Order:1},{Value:"auto:avglife",Label:"Avg. lifespan",Order:2},{Value:"100%",Label:"Free to browse",Order:3}],
-team:[{Name:"Founder Name",Role:"Founder",Bio:"Edit this in the Team tab of your Google Sheet.",Order:1}],
+team:[],
 pages:[
  {Page:"home",Order:1,Heading:"The Graveyard",Body:"Search, filter and compare startups by sector, failure reason and underlying tech.",Link:"graveyard.html"},
  {Page:"home",Order:2,Heading:"Spot the patterns",Body:"See which reasons, sectors and investors show up again and again.",Link:"graveyard.html"},
  {Page:"home",Order:3,Heading:"Submit a postmortem",Body:"Know a startup that shut down? Tell us its story for review.",Link:"graveyard.html"},
- {Page:"about",Order:1,Heading:"Our mission",Body:"Replace this text from the Pages tab of your Google Sheet.\n\nSeparate paragraphs with a blank line. Use **bold**, [links](https://example.com) and\n- bullet lists."},
+ {Page:"about",Order:1,Heading:"Why this graveyard exists",Body:"Most startup advice comes from the survivors. We think the dead have more to teach.\n\nThe Startup Graveyard is a record of Indian startups that shut down: what they raised, how long they lasted and why they folded. The point is not the failure, it is the pattern underneath it."},
+ {Page:"about",Order:2,Heading:"How it works",Body:"- Every entry is checked by hand before it goes live.\n- Know a startup that shut down? [Share its story](contact.html).\n- Spotted a mistake? Tell us and we will correct it."},
  {Page:"terms",Order:1,Heading:"1. Acceptance",Body:"By using this website you agree to these terms. Replace this placeholder with your reviewed legal text."},
  {Page:"privacy",Order:1,Heading:"1. What we collect",Body:"Replace this placeholder with your reviewed privacy policy."}]
 };
@@ -52,14 +53,15 @@ const initials=n=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").t
 function loadJs(src){return new Promise(res=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=res;document.head.appendChild(s)})}
 function loadScript(src){return new Promise((res,rej)=>{if(window.Papa)return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 
+const STATUS=window.GY_STATUS={};
 function tab(name){
  const gid=GIDS[name],def=DEF[name],ck="gy_tab_"+name;
- if(gid==="")return Promise.resolve(null);
+ if(gid===""){STATUS[name]="not connected (no gid in GIDS)";return Promise.resolve(null)}
  return loadScript("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js")
   .then(()=>fetch(`${SHEET}?gid=${gid}&single=true&output=csv`,{cache:"no-store"}))
   .then(r=>{if(!r.ok)throw 0;return r.text()})
-  .then(t=>{const d=Papa.parse(t,{header:true,skipEmptyLines:true}).data;try{localStorage.setItem(ck,JSON.stringify(d))}catch(e){}return d})
-  .catch(()=>{try{return JSON.parse(localStorage.getItem(ck))}catch(e){return null}});
+  .then(t=>{const d=Papa.parse(t,{header:true,skipEmptyLines:true}).data;STATUS[name]="live ("+d.length+" rows)";try{localStorage.setItem(ck,JSON.stringify(d))}catch(e){}return d})
+  .catch(e=>{STATUS[name]="FAILED to load: is this tab published to the web? Using "+(localStorage.getItem(ck)?"last saved copy":"built-in defaults");console.warn("[graveyard] tab \""+name+"\" "+STATUS[name]);try{return JSON.parse(localStorage.getItem(ck))}catch(e){return null}});
 }
 async function get(name){const d=await tab(name);return d&&d.length?d:null}
 async function getSettings(){const d=await get("settings");const s=Object.assign({},DEF.settings);
@@ -125,6 +127,7 @@ function textPage(k,S,P){
 }
 function teamPage(S,T){
  const m=T.filter(vis).sort(by);
+ if(!m.length)return pageHead(S,"team")+`<div class="ul-wrap" style="padding:50px 24px 90px"><p class="ul-lead">The team page is being put together. Check back soon.</p></div>`;
  return pageHead(S,"team")+`<div class="ul-wrap ul-team" style="padding-bottom:90px"><div class="ul-grid">${m.map(r=>{const ph=drive(r.Photo||r["Photo URL"]);
   return `<div class="ul-card tilt rv"><div class="ul-photo">${ph?`<img src="${esc(ph)}" alt="${esc(pc(r.Name))}" onerror="this.remove()">`:esc(initials(pc(r.Name)))}</div><div class="ul-body"><h3>${esc(pc(r.Name))}</h3><div class="ul-role">${esc(r.Role)}</div><p>${inline(r.Bio)}</p>${clean(r.LinkedIn)?`<a class="ul-more" href="${esc(url(r.LinkedIn))}" target="_blank" rel="noopener">LinkedIn →</a>`:""}</div></div>`}).join("")}</div></div>`;
 }
@@ -163,7 +166,8 @@ async function homeData(){
  let rows=[];
  try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js");
   const t=await fetch(`${SHEET}?gid=${GIDS.graveyard}&single=true&output=csv`,{cache:"no-store"}).then(r=>r.text());
-  rows=Papa.parse(t,{header:true,skipEmptyLines:true}).data.filter(r=>clean(r["Startup Name"])&&vis(r))}catch(e){}
+  rows=Papa.parse(t,{header:true,skipEmptyLines:true}).data.filter(r=>clean(r["Startup Name"])&&vis(r));STATUS.graveyard="live ("+rows.length+" rows)";try{localStorage.setItem("gy_rows",JSON.stringify(rows))}catch(e){}}
+ catch(e){try{rows=JSON.parse(localStorage.getItem("gy_rows"))||[]}catch(x){rows=[]}STATUS.graveyard="FAILED to load: is the Failed Startups tab published to the web?"+(rows.length?" Using last saved copy":"");console.warn("[graveyard] "+STATUS.graveyard)}
  const life=r=>{const a=parseInt(r["Founded In"]),b=parseInt(r["Shutdown Year"]);return a&&b&&b>=a?b-a:null};
  document.querySelectorAll("#ulStats b[data-v^='auto:']").forEach(b=>{const k=b.dataset.v;
   if(k==="auto:startups"){b.dataset.v=rows.length?String(rows.length):"—";b.textContent=b.dataset.v}
@@ -207,6 +211,9 @@ async function boot0(){
  else if(key==="team"){root.innerHTML=teamPage(S,team||DEF.team);fx()}
  else if(key==="contact"){root.innerHTML=contactPage(S);wireForm(S);fx()}
  else{root.innerHTML=textPage(key,S,P);fx()}
+ if(/[?&]debug\b/.test(location.search))debugPanel(S)
 }
+function debugPanel(S){const d=document.createElement("div");d.style.cssText="position:fixed;z-index:99999;right:12px;bottom:12px;max-width:380px;background:#221E1A;color:#E8E1D3;font:12px/1.6 monospace;padding:14px 16px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.4)";
+ d.innerHTML="<b>Sheet connection</b><br>"+["graveyard","settings","nav","pages","team","highlights"].map(k=>k+": "+esc(STATUS[k]||"not requested on this page")).join("<br>")+"<br><br>Add ?debug to any page address to see this.";document.body.appendChild(d)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();

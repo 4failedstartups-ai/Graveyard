@@ -86,8 +86,10 @@ body.ul-page{--beer:#C58A1F;--beer2:#E3AE45;--foam:#F6EFD9;--ease:cubic-bezier(.
 .gz-yearbox{margin-top:30px;min-height:96px;padding:16px 18px;border:1px dashed var(--rule);border-radius:4px;background:rgba(255,255,255,.2)}
 .gz-yearbox p{margin:0 0 10px;font-size:14.5px;color:var(--dim)}.gz-yearbox b{font:500 20px var(--serif);color:var(--paper)}
 .gz-pills{display:flex;flex-wrap:wrap;gap:7px}
-.gz-pills span,.gz-cause .vic span{font:12.5px var(--sans);padding:5px 11px;border-radius:999px;background:var(--ink);border:1px solid var(--rule);animation:gz-pop .35s var(--ease) both}
+.gz-pills span,.gz-pills a,.gz-cause .vic a{color:var(--paper);text-decoration:none;font:12.5px var(--sans);padding:5px 11px;border-radius:999px;background:var(--ink);border:1px solid var(--rule);animation:gz-pop .35s var(--ease) both}
 .gz-pills .more,.gz-cause .more{color:var(--dim);background:none}
+.gz-pills a,.gz-cause .vic a{transition:border-color .2s,color .2s,transform .2s}
+.gz-pills a:hover,.gz-cause .vic a:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
 @keyframes gz-pop{from{opacity:0;transform:scale(.85)}}
 .gz-empty{color:var(--dim);font-size:14px}
 

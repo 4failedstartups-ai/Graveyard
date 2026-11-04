@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="preloader.js"></script>
+<title>The Startup Graveyard — Indian Startup Postmortems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  /*
+    PALETTE — deliberately inverted from the Active Ledger:
+    light "aged paper" background instead of dark ink, a dried-blood
+    rust instead of gold, cold ash-grey instead of teal. Same bones,
+    opposite mood.
+  */
+  :root{
+    --bg: #E8E1D3;
+    --bg-2: #DCD3C0;
+    --ink: #221E1A;
+    --ink-dim: #6E6656;
+    --rule: rgba(34,30,26,0.15);
+    --rust: #8C3B2E;
+    --rust-dim: #6b2c22;
+    --ash: #5B6670;
+    --amber: #A67C52;
+    --wine: #6B3552;
+    --cobalt: #3E5C8A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection{ background: var(--rust); color: var(--bg); }
+
+  /* ---------- Ticker ---------- */
+  .ticker-wrap{
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg-2);
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 9px 0;
+  }
+  .ticker{
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.02em;
+    /* Fallback duration only — buildTicker() below overrides this inline,
+       calculated from actual content width, so scroll speed (px/sec) stays
+       constant no matter how many startups are in the sheet. */
+    animation: scroll 45s linear infinite;
+  }
+  .ticker span{ margin-right: 40px; color: var(--ink-dim); }
+  .ticker span b{ color: var(--rust); font-weight: 600; }
+  @keyframes scroll{
+    0%{ transform: translateX(0); }
+    100%{ transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce){ .ticker{ animation: none; } }
+
+  /* ---------- Header ---------- */
+  header{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 24px 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .eyebrow{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rust);
+    margin-bottom: 14px;
+  }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: clamp(38px, 6vw, 64px);
+    line-height: 1.02;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+  h1 em{ font-style: italic; color: var(--rust); }
+  .sub{
+    max-width: 560px;
+    color: var(--ink-dim);
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+  .stat-row{
+    display: flex; gap: 36px; margin-top: 30px; flex-wrap: wrap;
+  }
+  .stat b{
+    display:block; font-family:'IBM Plex Mono',monospace;
+    font-size: 26px; color: var(--ink);
+  }
+  .stat span{ font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---------- Controls ---------- */
+  .controls{
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 22px 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    border-bottom: 1px solid var(--rule);
+    position: sticky;
+    top: var(--ul-nav-h, 0px);
+    background: rgba(232,225,211,0.92);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+  }
+  input[type="text"], select{
+    background: var(--bg-2);
+    border: 1px solid var(--rule);
+    color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13.5px;
+    padding: 10px 14px;
+    border-radius: 3px;
+    outline: none;
+  }
+  input[type="text"]{ flex: 1; min-width: 200px; }
+  input[type="text"]:focus, select:focus{ border-color: var(--rust); }
+  select{ cursor: pointer; }
+  .count-pill{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--rust);
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  /* ---------- Grid ---------- */
+  main{ max-width: 1180px; margin: 0 auto; padding: 30px 24px 100px; }
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .card{
+    background: var(--bg);
+    padding: 22px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
+  }
+  .card:hover{ background: var(--bg-2); }
+  .card-top{ display:flex; align-items:center; gap: 12px; margin-bottom: 14px; }
+  .logo, .logo-fallback{
+    width: 42px; height: 42px; border-radius: 3px;
+    border: 1px solid var(--rule);
+    flex-shrink: 0;
+    filter: grayscale(55%);
+  }
+  .logo{
+    object-fit: contain;
+    background: #F4F0E6;
+    padding: 5px;
+  }
+  .logo-fallback{
+    background: var(--bg-2);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; color: var(--rust); font-size:17px;
+  }
+  .card-name{ font-family:'Fraunces', serif; font-size: 19px; font-weight: 500; line-height:1.15; }
+  .card-loc{ font-family:'IBM Plex Mono', monospace; font-size: 11px; color: var(--ink-dim); margin-top:2px; }
+  .card-tagline{ font-size: 13.5px; color: var(--ink-dim); line-height:1.5; margin-bottom: 16px; min-height: 40px; }
+  .card-edge{ margin: -4px 0 16px; padding: 10px 12px; border-left: 2px solid var(--rust); background: var(--bg-2); }
+  .card:hover .card-edge{ background: var(--bg); }
+  .card-edge span{ display:block; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.08em; color:var(--rust); margin-bottom:4px; }
+  .card-edge p{ margin:0; font-size:12px; line-height:1.45; color:var(--ink-dim); font-style: italic; }
+  .card-meta{ display:flex; justify-content: space-between; align-items:flex-end; border-top: 1px dashed var(--rule); padding-top: 12px; gap: 10px; }
+  .funding{ font-family:'IBM Plex Mono', monospace; font-size: 14px; color: var(--rust); }
+  .funding-label{ display:block; font-size: 10px; color: var(--ink-dim); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px; }
+  .lifespan{
+    font-family:'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink-dim);
+    text-transform: uppercase; letter-spacing: 0.05em; margin-left: 7px;
+  }
+  .badge-row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .sector-tag{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ash);
+    border: 1px solid var(--ash); padding: 3px 8px; border-radius: 20px;
+  }
+  .reason-tag{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--rust);
+    border: 1px solid var(--rust); padding: 3px 8px; border-radius: 20px;
+  }
+  .clickable{ cursor: pointer; transition: background .15s, color .15s; }
+  .sector-tag.clickable:hover{ background: var(--ash); color: var(--bg); }
+  .reason-tag.clickable:hover{ background: var(--rust); color: var(--bg); }
+  .investor-pill{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--amber);
+    border: 1px solid var(--amber); padding: 3px 8px; border-radius: 20px;
+  }
+  .investor-pill.clickable:hover{ background: var(--amber); color: var(--bg); }
+  .tech-pill{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--wine);
+    border: 1px solid var(--wine); padding: 3px 8px; border-radius: 20px;
+  }
+  .tech-pill.clickable:hover{ background: var(--wine); color: var(--bg); }
+  .founder-pill{
+    font-family:'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--cobalt);
+    border: 1px solid var(--cobalt); padding: 3px 8px; border-radius: 20px;
+  }
+  .founder-pill.clickable{ cursor: pointer; transition: background .15s, color .15s; }
+  .founder-pill.clickable:hover{ background: var(--cobalt); color: var(--bg); }
+  .rip-mark{ position:absolute; top:18px; right:18px; color: var(--rust); font-size: 15px; opacity: .7; }
+
+  .empty{ text-align:center; padding: 80px 20px; color: var(--ink-dim); font-family:'IBM Plex Mono',monospace; font-size:13px; }
+
+  /* ---------- Compare ---------- */
+  .compare-btn{ margin-top:14px; border:1px solid var(--ash); background:transparent; color:var(--ash); border-radius:3px; padding:7px 10px; font:11px 'IBM Plex Mono',monospace; cursor:pointer; }
+  .compare-btn:hover{ background: var(--bg-2); }
+  .compare-btn.selected{ background:var(--ash); color:var(--bg); }
+  .modal .compare-btn{ margin: 0 0 22px; }
+  .compare-tray{ position:fixed; z-index:30; left:50%; bottom:18px; transform:translateX(-50%); width:min(700px,calc(100% - 28px)); background:var(--bg-2); border:1px solid var(--rust-dim); box-shadow:0 8px 30px rgba(34,30,26,0.35); padding:12px 14px; display:none; }
+  .compare-tray.visible{ display:block; }
+  .compare-tray-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .compare-tray-actions{ display:flex; gap:8px; align-items:center; }
+  .compare-tray button{ border:1px solid var(--rule); background:transparent; color:var(--ink); padding:7px 10px; cursor:pointer; font:11px 'IBM Plex Mono',monospace; }
+  .compare-tray button.primary{ background:var(--rust); color:var(--bg); border-color:var(--rust); }
+  .compare-tray button:disabled{ opacity:.5; cursor:not-allowed; }
+  .compare-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .compare-chip{ border:1px solid var(--rule); padding:4px 8px; font-size:11px; color:var(--ink-dim); }
+  .compare-chip button{ padding:0 0 0 4px; border:none; font-size:13px; }
+  #compareOverlay{ z-index: 170; }
+  .compare-modal{ max-width: 980px; }
+  .compare-table{ width:100%; border-collapse:collapse; font-size:12px; min-width:520px; }
+  .compare-table th,.compare-table td{ border:1px solid var(--rule); padding:10px; text-align:left; vertical-align:top; }
+  .compare-table th{ color:var(--rust); font-family:'IBM Plex Mono',monospace; font-weight:500; }
+  .compare-scroll{ overflow-x:auto; margin-top:18px; }
+
+  /* ---------- Modal ---------- */
+  .overlay{
+    display:none; position: fixed; inset:0; background: rgba(34,30,26,0.55);
+    z-index: 100; padding: 40px 20px; overflow-y:auto;
+  }
+  .overlay.open{ display:block; }
+  #listOverlay{ z-index: 150; }
+  .modal{
+    max-width: 640px; margin: 0 auto; background: var(--bg-2);
+    border: 1px solid var(--rule); padding: 40px; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:20px; right:24px; background:none; border:none;
+    color: var(--ink-dim); font-size: 22px; cursor:pointer; font-family:'Space Grotesk',sans-serif;
+  }
+  .modal-close:hover{ color: var(--ink); }
+  .modal-head{ display:flex; gap:16px; align-items:center; margin-bottom: 24px; }
+  .modal-head .logo, .modal-head .logo-fallback{ width: 60px; height:60px; font-size:24px; }
+  .modal-head .logo{ padding: 8px; }
+  .modal h2{ font-family:'Fraunces',serif; font-weight:500; font-size: 28px; margin:0 0 4px; }
+  .modal .card-loc{ font-size: 12px; }
+  .modal-tagline{ font-size: 15px; color: var(--ink-dim); margin-bottom: 22px; line-height:1.5; }
+  .epitaph{
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 16.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    border-left: 3px solid var(--rust);
+    padding: 4px 0 4px 18px;
+    margin-bottom: 26px;
+  }
+  .field-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 20px 24px; margin-bottom: 26px; }
+  .field label{ display:block; font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color: var(--rust-dim); margin-bottom: 5px; }
+  .field div{ font-size: 13.5px; line-height:1.45; }
+  .pill-group{ margin-bottom: 22px; }
+  .pill-group-label{
+    font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.07em; color: var(--rust-dim); margin-bottom: 8px;
+  }
+  .pill-row{ display:flex; gap:6px; flex-wrap:wrap; }
+  .visit-btn{
+    display:inline-block; background: var(--rust); color: var(--bg); text-decoration:none;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600; padding: 12px 22px;
+    border-radius: 3px;
+  }
+  .visit-btn:hover{ background: var(--rust-dim); }
+
+  /* ---------- List popup (tag / investor / tech / reason results) ---------- */
+  .list-rows{
+    display:flex; flex-direction:column; gap:1px;
+    background: var(--rule); border: 1px solid var(--rule);
+  }
+  .list-row{
+    background: var(--bg); padding: 14px 16px;
+    display:flex; align-items:center; gap:14px;
+    cursor: pointer; transition: background .15s ease;
+  }
+  .list-row:hover{ background: var(--bg-2); }
+  .list-row-info{ flex:1; min-width:0; }
+  .list-row-info .card-name{ font-size: 15.5px; }
+
+  footer{ text-align:center; padding: 30px; color: var(--ink-dim); font-family:'IBM Plex Mono',monospace; font-size:11px; border-top:1px solid var(--rule); }
+
+  /* ---------- Submit-a-postmortem button + form ---------- */
+  .suggest-btn{
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-top: 26px;
+    background: var(--rust); color: var(--bg); border: none; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600;
+    padding: 12px 20px; border-radius: 3px; text-decoration: none;
+  }
+  .suggest-btn:hover{ background: var(--rust-dim); }
+  #submitOverlay{ z-index: 160; }
+  .form-field{ margin-bottom: 18px; }
+  .form-field label{
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.07em; color: var(--rust-dim); margin-bottom: 6px;
+  }
+  .required-mark{ color: var(--rust); }
+  .form-field input[type="text"], .form-field input[type="email"], .form-field input[type="url"],
+  .form-field select, .form-field textarea{
+    width: 100%; background: var(--bg); border: 1px solid var(--rule); color: var(--ink);
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; padding: 10px 12px;
+    border-radius: 3px; outline: none;
+  }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus{ border-color: var(--rust); }
+  .form-field textarea{ resize: vertical; min-height: 70px; }
+  .form-honeypot{ position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .form-submit-btn{
+    background: var(--rust); color: var(--bg); border: none; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px;
+    padding: 12px 22px; border-radius: 3px;
+  }
+  .form-submit-btn:hover{ background: var(--rust-dim); }
+  .form-submit-btn:disabled{ opacity: 0.6; cursor: not-allowed; }
+  .form-status{ margin-top: 14px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+  .form-status.success{ color: #4d7a52; }
+  .form-status.error{ color: var(--rust); }
+
+  @media (max-width: 560px){
+    .field-grid{ grid-template-columns: 1fr; }
+    .stat-row{ gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap"><div class="ticker" id="ticker"></div></div>
+
+<header>
+  <div class="eyebrow">Vol. 01 — Postmortems</div>
+  <h1>The Startup <em>Graveyard</em></h1>
+  <p class="sub">A record of the startups that didn't make it — what they raised, how long they lasted, and why they folded. The point isn't the failure, it's the pattern underneath it.</p>
+  <div class="stat-row" id="statRow"></div>
+  <button class="suggest-btn" onclick="openSubmitModal()">+ Submit a postmortem</button>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search by name, founder, or investor…">
+  <select id="sectorFilter"><option value="">All sectors</option></select>
+  <select id="reasonFilter"><option value="">All failure reasons</option></select>
+  <select id="techFilter"><option value="">All underlying tech</option></select>
+  <select id="sortBy">
+    <option value="name">Sort: Name (A–Z)</option>
+    <option value="year-desc">Sort: Newest founded</option>
+    <option value="year-asc">Sort: Oldest founded</option>
+    <option value="lifespan-asc">Sort: Shortest lived</option>
+    <option value="lifespan-desc">Sort: Longest lived</option>
+    <option value="funding-desc">Sort: Highest raised</option>
+  </select>
+  <span class="count-pill" id="countPill">loading…</span>
+  <span class="count-pill" id="syncBadge" style="margin-left:0;"></span>
+</div>
+
+<main>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyMsg" style="display:none;">No startups match that filter — try clearing search.</div>
+</main>
+
+<footer>OBITUARIES SOURCED LIVE FROM DATABASE</footer>
+
+<div class="compare-tray" id="compareTray">
+  <div class="compare-tray-head">
+    <strong><span id="compareCount">0</span>/4 selected for comparison</strong>
+    <div class="compare-tray-actions">
+      <button type="button" id="clearCompare">Clear</button>
+      <button type="button" class="primary" id="openCompare" disabled>Compare selected</button>
+    </div>
+  </div>
+  <div class="compare-chips" id="compareChips"></div>
+</div>
+<div class="overlay" id="compareOverlay"><div class="modal compare-modal" id="compareModalContent"></div></div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="overlay" id="listOverlay">
+  <div class="modal" id="listModalContent"></div>
+</div>
+
+<div class="overlay" id="submitOverlay">
+  <div class="modal" id="submitModalContent">
+    <button class="modal-close" onclick="closeSubmitModal()">&times;</button>
+    <h2 style="margin-bottom:6px;">Submit a Postmortem</h2>
+    <p class="modal-tagline" style="margin-bottom:24px;">Know a startup that shut down — yours, or one you followed? Tell us its story. Every submission is reviewed by hand before anything goes live.</p>
+    <form id="submitForm">
+      <div class="form-field">
+        <label>Your Name <span class="required-mark">*</span></label>
+        <input type="text" name="submitterName" required>
+      </div>
+      <div class="form-field">
+        <label>Your Email <span class="required-mark">*</span></label>
+        <input type="email" name="submitterEmail" required>
+      </div>
+      <div class="form-field">
+        <label>Relationship <span class="required-mark">*</span></label>
+        <select name="relationship" required>
+          <option value="">Select one…</option>
+          <option value="Founder / Team">This was my own startup</option>
+          <option value="Recommendation">I'm recommending someone else's</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Startup Name <span class="required-mark">*</span></label>
+        <input type="text" name="startupName" required>
+      </div>
+      <div class="form-field">
+        <label>Last-Known Website</label>
+        <input type="url" name="startupWebsite" placeholder="https://">
+      </div>
+      <div class="form-field">
+        <label>One-line Description <span class="required-mark">*</span></label>
+        <input type="text" name="tagline" required placeholder="What did they actually do?">
+      </div>
+      <div class="form-field">
+        <label>Sector</label>
+        <input type="text" name="sector" placeholder="e.g. Logistics, FinTech, SaaS">
+      </div>
+      <div class="form-field">
+        <label>Founded Year</label>
+        <input type="text" name="foundedYear" placeholder="e.g. 2021">
+      </div>
+      <div class="form-field">
+        <label>Shutdown Year</label>
+        <input type="text" name="shutdownYear" placeholder="e.g. 2024">
+      </div>
+      <div class="form-field">
+        <label>Failure Reason</label>
+        <input type="text" name="failureReason" placeholder="e.g. Ran out of funding, No product-market fit">
+      </div>
+      <div class="form-field">
+        <label>Anything else? Lesson learned, postmortem link, etc.</label>
+        <textarea name="notes" placeholder="Optional — the more context, the better"></textarea>
+      </div>
+      <!-- Honeypot: invisible to real visitors, but a bot filling every field will fill this too.
+           If it comes back non-empty, we quietly drop the submission instead of sending it. -->
+      <div class="form-honeypot" aria-hidden="true">
+        <label for="website_confirm">Leave this field empty</label>
+        <input type="text" id="website_confirm" name="website_confirm" tabindex="-1" autocomplete="off">
+      </div>
+      <button type="submit" class="form-submit-btn" id="submitFormBtn">Send submission</button>
+      <div id="submitFormStatus" class="form-status"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// The "Failed Startups" tab's published CSV link.
+// File > Share > Publish to web > select the "Failed Startups"
+// sheet (not the whole workbook) > CSV > Publish.
+// ============================================================
+const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnzz7ZtIZdVOzq9FJLG0x1Hz2Y6XYNkTsveYm_sJheBoPIP-jhL27SBGl57CLMJirXvzjSQ4X-CMmB/pub?gid=2022120840&single=true&output=csv";
+
+// Baked-in snapshot so the page works immediately even when the live fetch
+// is blocked (e.g. in a sandboxed preview) or before you've set CSV_URL.
+// Once hosted on a real domain with CSV_URL filled in, the live fetch below
+// silently replaces this with fresh data on every load.
+const FALLBACK_CSV = `Startup Name,Tagline / Description,Headquarters,Founded In,Shutdown Year,Funding Amount,Funding Stage,Business Model,Founders,Sector,Team Size,Primary Competition,Key Investors,User Base,Logo URL,Website URL,Status,Tags,Underlying Tech,Failure Reason,Epitaph / Key Lesson,Post-Mortem URL
+Quikship,Same-day hyperlocal delivery for D2C brands,Bengaluru,2021,2024,$3.2M,Seed,B2B,"Aakash Rao, Priya Nambiar",Logistics,11-50,"Dunzo, Shadowfax",Riceberg Ventures,-,-,https://quikship.example/,Failed,"Logistics, D2C, Hyperlocal, Last-Mile","Route Optimization, Fleet Dispatch",Ran out of funding,"Unit economics never worked below 500 orders/day — we scaled the fleet before we'd proven the density.",https://example.com/quikship-postmortem
+Chatfirst,AI customer support agent for D2C Shopify stores,Delhi NCR,2022,2024,$1.1M,Pre-Seed,B2B,Rohan Mehta,Horizontal SaaS,2-10,"Gorgias, Intercom",Envigo,-,-,https://chatfirst.example/,Failed,"AI, Customer Support, SaaS, Shopify",LLM Orchestration,No product-market fit,"Every customer wanted a different depth of automation — we built a generic tool for a problem that needed twelve specific ones.",https://example.com/chatfirst-postmortem`;
+
+// ============================================================
+// FOUNDERS LOOKUP
+// Reuses the SAME "Founders" tab as ledger.html — one shared
+// directory of people, not a separate one per page. A founder's
+// LinkedIn and business history (across both their active ventures
+// and any that ended up here) only needs to be entered once.
+// ============================================================
+const FOUNDERS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSnzz7ZtIZdVOzq9FJLG0x1Hz2Y6XYNkTsveYm_sJheBoPIP-jhL27SBGl57CLMJirXvzjSQ4X-CMmB/pub?gid=245996823&single=true&output=csv";
+
+const FOUNDERS_FALLBACK_CSV = `Founder Name,LinkedIn URL,Startups / Businesses
+Aakash Rao,https://linkedin.com/in/example,"Quikship, An earlier logistics venture (not tracked)"`;
+
+let FOUNDERS_LOOKUP = {};
+
+function buildFoundersLookup(text){
+  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  const lookup = {};
+  results.data.forEach(row => {
+    const name = clean(row['Founder Name']);
+    if (!name) return;
+    lookup[name.toLowerCase()] = {
+      displayName: name,
+      linkedin: clean(row['LinkedIn URL']),
+      businesses: splitList(row['Startups / Businesses'])
+    };
+  });
+  return lookup;
+}
+
+function loadFoundersData(){
+  FOUNDERS_LOOKUP = buildFoundersLookup(FOUNDERS_FALLBACK_CSV);
+
+  if(!FOUNDERS_CSV_URL || FOUNDERS_CSV_URL.indexOf("PASTE_YOUR") === 0){
+    console.warn("Founders CSV not configured yet — founder pills will use the fallback snapshot only.");
+    return;
+  }
+
+  fetch(FOUNDERS_CSV_URL, { cache: "no-store" })
+    .then(res => { if(!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+    .then(text => {
+      if(!text || text.trim().length === 0) throw new Error("Empty response");
+      FOUNDERS_LOOKUP = buildFoundersLookup(text);
+    })
+    .catch(() => {
+      // Silent fail — fallback lookup is already in place.
+    });
+}
+
+let ALL = [];
+
+function driveDirectLink(url){
+  if(!url || url === '-' ) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  if(m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w300`;
+  return url;
+}
+
+function initials(name){
+  return String(name||'?').split(/\s+/).map(w=>w.replace(/[^\p{L}\p{N}]/gu,'')[0]||'').slice(0,2).join('').toUpperCase() || '?';
+}
+function E(v){ return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function clean(v){ return (v === undefined || v === null || v.trim() === '-' ) ? '' : v.trim(); }
+
+function splitList(v){
+  return clean(v).split(',').map(x=>x.trim()).filter(Boolean);
+}
+
+function lifespanYears(row){
+  const founded = parseInt(row['Founded In']);
+  const shutdown = parseInt(row['Shutdown Year']);
+  if(!founded || !shutdown || shutdown < founded) return null;
+  return shutdown - founded;
+}
+
+// Rough parse of "$3.2M" / "₹8Cr" style strings into a comparable USD-ish number,
+// just for sorting/aggregating — not meant to be exact currency conversion.
+function parseFundingValue(v){
+  const s = clean(v);
+  if(!s) return 0;
+  const num = parseFloat(s.replace(/[^0-9.]/g, ''));
+  if(isNaN(num)) return 0;
+  if(/cr/i.test(s)) return num * 120000; // rough INR Cr -> USD approx, sorting-purposes only
+  if(/k/i.test(s)) return num * 1000;
+  if(/m/i.test(s)) return num * 1000000;
+  if(/b/i.test(s)) return num * 1000000000;
+  return num;
+}
+
+function render(list){
+  const grid = document.getElementById('grid');
+  const empty = document.getElementById('emptyMsg');
+  grid.innerHTML = '';
+  document.getElementById('countPill').textContent = `${list.length} LISTED`;
+  if(list.length === 0){ empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  list.forEach((row, idx)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    const logoUrl = driveDirectLink(row['Logo URL']);
+    const life = lifespanYears(row);
+    const reason = clean(row['Failure Reason']);
+    const lesson = clean(row['Epitaph / Key Lesson']);
+    card.innerHTML = `
+      <div class="rip-mark">†</div>
+      <div class="card-top">
+        ${logoUrl ? `<img class="logo" src="${E(logoUrl)}" onerror="this.outerHTML='<div class=logo-fallback>${initials(row['Startup Name'])}</div>'">` : `<div class="logo-fallback">${initials(row['Startup Name'])}</div>`}
+        <div>
+          <div class="card-name">${E(row['Startup Name'])}</div>
+          <div class="card-loc">${E(clean(row['Headquarters']) || '—')} · ${E(clean(row['Founded In']) || '—')}–${E(clean(row['Shutdown Year']) || '—')}</div>
+        </div>
+      </div>
+      <div class="card-tagline">${E(row['Tagline / Description'] || '')}</div>
+      ${(()=>{const b=parseInt(row['Founded In']),d=parseInt(row['Shutdown Year']);return (b&&d&&d>=b)?`<div class="card-life" aria-hidden="true"><b>${b}</b><i><u style="--w:${Math.max(8,Math.min(100,(d-b)/12*100))}%"></u></i><b>${d}</b></div>`:''})()}
+      ${lesson ? `<div class="card-edge"><span>KEY LESSON</span><p>${E(lesson)}</p></div>` : ''}
+      <div class="card-meta">
+        <div>
+          <span class="funding-label">Raised</span>
+          <span class="funding">${E(clean(row['Funding Amount']) || '—')}</span>${life !== null ? `<span class="lifespan">${life} yr${life === 1 ? '' : 's'}</span>` : ''}
+        </div>
+        <div class="badge-row">
+          ${reason ? `<span class="reason-tag">${E(reason)}</span>` : ''}
+          <span class="sector-tag">${E(clean(row['Sector']) || '—')}</span>
+        </div>
+      </div>
+      <button type="button" class="compare-btn" data-compare="${encodeURIComponent(row['Startup Name'])}">+ Compare</button>
+    `;
+    card.style.setProperty('--i', Math.min(idx, 24));
+    card.addEventListener('click', ()=> openModal(row));
+    card.querySelector('.compare-btn').addEventListener('click', e=>{ e.stopPropagation(); toggleCompare(row); });
+    grid.appendChild(card);
+  });
+  updateCompareButtons(); // keep "added" state after filter/sort re-renders
+}
+
+function openModal(row){
+  const logoUrl = driveDirectLink(row['Logo URL']);
+  const tags = splitList(row['Tags']);
+  const investors = splitList(row['Key Investors']);
+  const tech = splitList(row['Underlying Tech']);
+  const reason = clean(row['Failure Reason']);
+  const epitaph = clean(row['Epitaph / Key Lesson']);
+  const life = lifespanYears(row);
+  const founders = splitList(row['Founders']);
+  const fields = [
+    ['Business Model', row['Business Model']],
+    ['Funding Stage', row['Funding Stage']],
+    ['Team Size', row['Team Size']],
+    ['Lifespan', life !== null ? `${life} year${life === 1 ? '' : 's'}` : ''],
+    ['Primary Competition', row['Primary Competition']],
+    ['User Base', row['User Base']],
+  ];
+  const modal = document.getElementById('modalContent');
+  modal.innerHTML = `
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div class="modal-head">
+      ${logoUrl ? `<img class="logo" src="${E(logoUrl)}" onerror="this.outerHTML='<div class=logo-fallback>${initials(row['Startup Name'])}</div>'">` : `<div class="logo-fallback">${initials(row['Startup Name'])}</div>`}
+      <div>
+        <h2>${E(row['Startup Name'])}</h2>
+        <div class="card-loc">${E(clean(row['Headquarters']) || '—')} · ${E(clean(row['Founded In']) || '—')}–${E(clean(row['Shutdown Year']) || '—')}</div>
+      </div>
+    </div>
+    <p class="modal-tagline">${E(row['Tagline / Description'] || '')}</p>
+    ${epitaph ? `<div class="epitaph">"${E(epitaph)}"</div>` : ''}
+    <button type="button" class="candle-btn" id="candleBtn" aria-pressed="false"><svg viewBox="0 0 24 34" aria-hidden="true"><rect x="8" y="14" width="8" height="18" rx="2" class="wx"/><path class="fl" d="M12 11c4-5 4-9 0-14-4 5-4 9 0 14z"/></svg><span>Light a candle</span></button>
+    <button type="button" class="compare-btn" id="modalCompareBtn">+ Add to comparison</button>
+    <div class="field-grid">
+      ${fields.filter(f=>clean(f[1])).map(f=>`<div class="field"><label>${f[0]}</label><div>${E(f[1])}</div></div>`).join('')}
+    </div>
+    <div id="modalFoundersWrap"></div>
+    <div id="modalReasonWrap"></div>
+    <div id="modalTechWrap"></div>
+    <div id="modalTagsWrap"></div>
+    <div id="modalInvestorsWrap"></div>
+    ${clean(row['Post-Mortem URL']) ? `<a class="visit-btn" href="${E(row['Post-Mortem URL'])}" target="_blank" rel="noopener">Read the postmortem →</a>` : (clean(row['Website URL']) ? `<a class="visit-btn" href="${E(row['Website URL'])}" target="_blank" rel="noopener">Visit last-known site →</a>` : '')}
+  `;
+
+  const modalCompareBtn = document.getElementById('modalCompareBtn');
+  modalCompareBtn.addEventListener('click', ()=> toggleCompare(row));
+  syncModalCompareButton(row);
+
+  // Founders — click one to see their LinkedIn + full business history.
+  const foundersWrap = document.getElementById('modalFoundersWrap');
+  if(founders.length){
+    const group = document.createElement('div');
+    group.className = 'pill-group';
+    const label = document.createElement('div');
+    label.className = 'pill-group-label';
+    label.textContent = 'Founders — click for LinkedIn & business history';
+    group.appendChild(label);
+    const row2 = document.createElement('div');
+    row2.className = 'pill-row';
+    founders.forEach(name=>{
+      const el = document.createElement('span');
+      el.className = 'founder-pill clickable';
+      el.textContent = name;
+      el.addEventListener('click', ()=> openFounderPopup(name));
+      row2.appendChild(el);
+    });
+    group.appendChild(row2);
+    foundersWrap.appendChild(group);
+  }
+
+  // Failure reason — click to see every other startup that died the same way.
+  const reasonWrap = document.getElementById('modalReasonWrap');
+  if(reason){
+    const group = document.createElement('div');
+    group.className = 'pill-group';
+    const label = document.createElement('div');
+    label.className = 'pill-group-label';
+    label.textContent = 'Failure reason — click to see others';
+    group.appendChild(label);
+    const row2 = document.createElement('div');
+    row2.className = 'pill-row';
+    const el = document.createElement('span');
+    el.className = 'reason-tag clickable';
+    el.textContent = reason;
+    el.addEventListener('click', ()=> openReasonList(reason));
+    row2.appendChild(el);
+    group.appendChild(row2);
+    reasonWrap.appendChild(group);
+  }
+
+  // Underlying Tech — same cross-sector cross-link as the Active Ledger.
+  const techWrap = document.getElementById('modalTechWrap');
+  if(tech.length){
+    const group = document.createElement('div');
+    group.className = 'pill-group';
+    const label = document.createElement('div');
+    label.className = 'pill-group-label';
+    label.textContent = 'Underlying tech — click to see who else built on it';
+    group.appendChild(label);
+    const row2 = document.createElement('div');
+    row2.className = 'pill-row';
+    tech.forEach(t=>{
+      const el = document.createElement('span');
+      el.className = 'tech-pill clickable';
+      el.textContent = t;
+      el.addEventListener('click', ()=> openTechList(t));
+      row2.appendChild(el);
+    });
+    group.appendChild(row2);
+    techWrap.appendChild(group);
+  }
+
+  // Tags
+  const tagsWrap = document.getElementById('modalTagsWrap');
+  if(tags.length){
+    const group = document.createElement('div');
+    group.className = 'pill-group';
+    const label = document.createElement('div');
+    label.className = 'pill-group-label';
+    label.textContent = 'Tags — click to see related startups';
+    group.appendChild(label);
+    const row2 = document.createElement('div');
+    row2.className = 'pill-row';
+    tags.forEach(t=>{
+      const el = document.createElement('span');
+      el.className = 'sector-tag clickable';
+      el.textContent = t;
+      el.addEventListener('click', ()=> openTagList(t));
+      row2.appendChild(el);
+    });
+    group.appendChild(row2);
+    tagsWrap.appendChild(group);
+  }
+
+  // Investors — click to see everything else that investor backed that also failed.
+  const investorsWrap = document.getElementById('modalInvestorsWrap');
+  if(investors.length){
+    const group = document.createElement('div');
+    group.className = 'pill-group';
+    const label = document.createElement('div');
+    label.className = 'pill-group-label';
+    label.textContent = 'Key investors — click to see their other losses';
+    group.appendChild(label);
+    const row2 = document.createElement('div');
+    row2.className = 'pill-row';
+    investors.forEach(inv=>{
+      const el = document.createElement('span');
+      el.className = 'investor-pill clickable';
+      el.textContent = inv;
+      el.addEventListener('click', ()=> openInvestorList(inv));
+      row2.appendChild(el);
+    });
+    group.appendChild(row2);
+    investorsWrap.appendChild(group);
+  }
+
+  // Light a candle (remembered on this device only)
+  const candleKey = clean(row['Startup Name']).toLowerCase();
+  let candles = []; try{ candles = JSON.parse(localStorage.getItem('gy_candles')||'[]'); }catch(_){}
+  const cb = document.getElementById('candleBtn');
+  const paintCandle = on => { cb.setAttribute('aria-pressed', on); cb.querySelector('span').textContent = on ? 'Candle lit — rest in peace' : 'Light a candle'; };
+  paintCandle(candles.includes(candleKey));
+  cb.addEventListener('click', ()=>{
+    const on = cb.getAttribute('aria-pressed') !== 'true';
+    candles = candles.filter(x=>x!==candleKey); if(on) candles.push(candleKey);
+    try{ localStorage.setItem('gy_candles', JSON.stringify(candles)); }catch(_){}
+    paintCandle(on);
+  });
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('open');
+  if(/^#s=/.test(location.hash)){ openedFromHash = ''; try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){} }
+}
+// Deep link: graveyard.html#s=Startup%20Name opens that startup's page.
+let openedFromHash = '';
+function openFromHash(){
+  const m = location.hash.match(/^#s=(.+)$/); if(!m) return;
+  let n = ''; try{ n = decodeURIComponent(m[1]).trim().toLowerCase(); }catch(_){ return; }
+  const row = ALL.find(r => clean(r['Startup Name']).toLowerCase() === n);
+  if(row && openedFromHash !== n){ openedFromHash = n; openModal(row); }
+}
+window.addEventListener('hashchange', openFromHash);
+document.getElementById('overlay').addEventListener('click', e=>{ if(e.target.id==='overlay') closeModal(); });
+
+// ---- Tag / investor / tech / reason popup table ----
+function showListModal(title, matches){
+  const modal = document.getElementById('listModalContent');
+  modal.innerHTML = `
+    <button class="modal-close" onclick="closeListModal()">&times;</button>
+    <h2 style="margin-bottom:4px;">${title}</h2>
+    <div class="card-loc" style="margin-bottom:22px;">${matches.length} startup${matches.length === 1 ? '' : 's'}</div>
+    <div id="listRows" class="list-rows"></div>
+  `;
+  const rowsWrap = document.getElementById('listRows');
+  if(matches.length === 0){
+    rowsWrap.innerHTML = `<div class="empty" style="padding:30px 0;">No startups found.</div>`;
+  } else {
+    matches.forEach(row=>{
+      const logoUrl = driveDirectLink(row['Logo URL']);
+      const r = document.createElement('div');
+      r.className = 'list-row';
+      r.innerHTML = `
+        ${logoUrl ? `<img class="logo" src="${E(logoUrl)}" onerror="this.outerHTML='<div class=logo-fallback>${initials(row['Startup Name'])}</div>'">` : `<div class="logo-fallback">${initials(row['Startup Name'])}</div>`}
+        <div class="list-row-info">
+          <div class="card-name">${E(row['Startup Name'])}</div>
+          <div class="card-loc">${E(clean(row['Headquarters']) || '—')} · ${E(clean(row['Sector']) || '—')}</div>
+        </div>
+        <div class="funding">${E(clean(row['Funding Amount']) || '—')}</div>
+      `;
+      r.addEventListener('click', ()=>{ closeListModal(); openModal(row); });
+      rowsWrap.appendChild(r);
+    });
+  }
+  document.getElementById('listOverlay').classList.add('open');
+}
+function closeListModal(){ document.getElementById('listOverlay').classList.remove('open'); }
+document.getElementById('listOverlay').addEventListener('click', e=>{ if(e.target.id==='listOverlay') closeListModal(); });
+
+// ============================================================
+// SUBMIT-A-POSTMORTEM
+// Uses the SAME Apps Script Web App as the Active Ledger's
+// "Suggest a Startup" form. The script tells them apart by the
+// "formType" field below and files this one into a separate
+// "Failed Submissions" tab, never touching "Failed Startups"
+// directly, so nothing goes live without you reviewing it first.
+// ============================================================
+const SUBMISSION_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWTxHdENG8WbLHSCaesT7y7bLVk6Gu38LBYJQQFqi42Zh-dvxVEvfn4MwCdw7FifiH/exec";
+let submitModalOpenedAt = 0;
+
+function openSubmitModal(){
+  document.getElementById('submitOverlay').classList.add('open');
+  submitModalOpenedAt = Date.now();
+}
+function closeSubmitModal(){
+  document.getElementById('submitOverlay').classList.remove('open');
+}
+document.getElementById('submitOverlay').addEventListener('click', e=>{ if(e.target.id==='submitOverlay') closeSubmitModal(); });
+
+document.getElementById('submitForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const form = e.target;
+  const statusEl = document.getElementById('submitFormStatus');
+  const btn = document.getElementById('submitFormBtn');
+
+  // Honeypot — real visitors never see or fill this field. If it's filled, it's a bot;
+  // pretend success and send nothing rather than tipping off the bot to adapt.
+  if(form.website_confirm.value.trim() !== ''){
+    statusEl.textContent = 'Thanks — your submission has been sent.';
+    statusEl.className = 'form-status success';
+    form.reset();
+    setTimeout(closeSubmitModal, 1500);
+    return;
+  }
+
+  // A real person takes at least a couple seconds to read and fill this out.
+  if(Date.now() - submitModalOpenedAt < 2500){
+    statusEl.textContent = 'Please take a moment to fill out the form.';
+    statusEl.className = 'form-status error';
+    return;
+  }
+
+  if(!SUBMISSION_APPS_SCRIPT_URL || SUBMISSION_APPS_SCRIPT_URL.indexOf("PASTE_YOUR") === 0){
+    statusEl.textContent = "Submissions aren't set up yet — please reach out to us directly instead.";
+    statusEl.className = 'form-status error';
+    return;
+  }
+
+  const payload = {
+    formType: "failedSuggestion",
+    submitterName: form.submitterName.value.trim(),
+    submitterEmail: form.submitterEmail.value.trim(),
+    relationship: form.relationship.value,
+    startupName: form.startupName.value.trim(),
+    startupWebsite: form.startupWebsite.value.trim(),
+    tagline: form.tagline.value.trim(),
+    sector: form.sector.value.trim(),
+    foundedYear: form.foundedYear.value.trim(),
+    shutdownYear: form.shutdownYear.value.trim(),
+    failureReason: form.failureReason.value.trim(),
+    notes: form.notes.value.trim(),
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  statusEl.textContent = '';
+  statusEl.className = 'form-status';
+
+  fetch(SUBMISSION_APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "text/plain;charset=utf-8" } // avoids CORS preflight issues with Apps Script
+  })
+    .then(res => res.text().then(text => ({ status: res.status, ok: res.ok, text })))
+    .then(({ status, ok, text }) => {
+      let data = null;
+      try { data = JSON.parse(text); } catch(_) { /* not JSON — handled below */ }
+
+      if(ok && data && data.ok){
+        statusEl.textContent = "Thanks — your submission has been sent for review.";
+        statusEl.className = 'form-status success';
+        form.reset();
+        setTimeout(closeSubmitModal, 1800);
+      } else {
+        const reason = data && data.error ? data.error : `HTTP ${status}: ${text.slice(0, 200)}`;
+        console.error('Submission failed:', reason);
+        statusEl.textContent = "That didn't go through (" + reason + "). Please try again or email us directly.";
+        statusEl.className = 'form-status error';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Send submission';
+    })
+    .catch((err) => {
+      console.error('Submission network error:', err);
+      statusEl.textContent = "Something went wrong sending that — please try again or email us directly.";
+      statusEl.className = 'form-status error';
+      btn.disabled = false;
+      btn.textContent = 'Send submission';
+    });
+});
+
+function openTagList(tag){
+  const norm = tag.trim().toLowerCase();
+  const matches = ALL.filter(r => splitList(r['Tags']).some(t => t.toLowerCase() === norm));
+  showListModal(`Tag — ${tag}`, matches);
+}
+function openInvestorList(investor){
+  const norm = investor.trim().toLowerCase();
+  const matches = ALL.filter(r => splitList(r['Key Investors']).some(t => t.toLowerCase() === norm));
+  showListModal(`Investor — ${investor}`, matches);
+}
+function openTechList(tech){
+  const norm = tech.trim().toLowerCase();
+  const matches = ALL.filter(r => splitList(r['Underlying Tech']).some(t => t.toLowerCase() === norm));
+  showListModal(`Underlying Tech — ${tech}`, matches);
+}
+function openReasonList(reason){
+  const norm = reason.trim().toLowerCase();
+  const matches = ALL.filter(r => clean(r['Failure Reason']).toLowerCase() === norm);
+  showListModal(`Failure Reason — ${reason}`, matches);
+}
+
+function openFounderPopup(name){
+  const norm = name.trim().toLowerCase();
+  const info = FOUNDERS_LOOKUP[norm];
+  const modal = document.getElementById('listModalContent');
+
+  const linkedinHtml = (info && info.linkedin)
+    ? `<a class="visit-btn" href="${info.linkedin}" target="_blank" rel="noopener" style="margin-bottom:22px; display:inline-block;">View LinkedIn →</a>`
+    : `<div class="card-loc" style="margin-bottom:22px;">No LinkedIn on file yet.</div>`;
+
+  modal.innerHTML = `
+    <button class="modal-close" onclick="closeListModal()">&times;</button>
+    <h2 style="margin-bottom:4px;">${info ? info.displayName : name}</h2>
+    ${linkedinHtml}
+    <div class="pill-group-label" style="margin-bottom:10px;">Startups & Businesses</div>
+    <div id="founderBusinessRows" class="list-rows"></div>
+  `;
+
+  const rowsWrap = document.getElementById('founderBusinessRows');
+  const businesses = info ? info.businesses : [];
+
+  if(businesses.length === 0){
+    rowsWrap.innerHTML = `<div class="empty" style="padding:30px 0;">No businesses on file for this founder yet — add them to the "Founders" tab.</div>`;
+  } else {
+    businesses.forEach(bizName=>{
+      // If this name matches a startup currently tracked here, make the row clickable
+      // through to its full detail view; otherwise show it as plain info.
+      const matchingStartup = ALL.find(r => (r['Startup Name']||'').trim().toLowerCase() === bizName.trim().toLowerCase());
+      const r = document.createElement('div');
+      r.className = 'list-row';
+
+      if(matchingStartup){
+        const logoUrl = driveDirectLink(matchingStartup['Logo URL']);
+        r.innerHTML = `
+          ${logoUrl ? `<img class="logo" src="${E(logoUrl)}" onerror="this.outerHTML='<div class=logo-fallback>${initials(matchingStartup['Startup Name'])}</div>'">` : `<div class="logo-fallback">${initials(matchingStartup['Startup Name'])}</div>`}
+          <div class="list-row-info">
+            <div class="card-name">${matchingStartup['Startup Name']}</div>
+            <div class="card-loc">${clean(matchingStartup['Headquarters']) || '—'} · ${clean(matchingStartup['Sector']) || '—'}</div>
+          </div>
+          <div class="funding">${clean(matchingStartup['Funding Amount']) || '—'}</div>
+        `;
+        r.addEventListener('click', ()=>{ closeListModal(); openModal(matchingStartup); });
+      } else {
+        r.innerHTML = `
+          <div class="logo-fallback">${initials(bizName)}</div>
+          <div class="list-row-info">
+            <div class="card-name">${bizName}</div>
+            <div class="card-loc">Not currently tracked here</div>
+          </div>
+        `;
+        r.style.cursor = 'default';
+      }
+      rowsWrap.appendChild(r);
+    });
+  }
+
+  document.getElementById('listOverlay').classList.add('open');
+}
+
+function applyFilters(){
+  const q = document.getElementById('search').value.toLowerCase();
+  const sector = document.getElementById('sectorFilter').value;
+  const reasonVal = document.getElementById('reasonFilter').value;
+  const techVal = document.getElementById('techFilter').value;
+  const sortBy = document.getElementById('sortBy').value;
+
+  let list = ALL.filter(row=>{
+    const hay = `${row['Startup Name']} ${row['Founders']} ${row['Key Investors']} ${row['Tagline / Description']} ${row['Tags']} ${row['Underlying Tech']}`.toLowerCase();
+    if(q && !hay.includes(q)) return false;
+    if(sector && row['Sector'] !== sector) return false;
+    if(reasonVal && clean(row['Failure Reason']) !== reasonVal) return false;
+    if(techVal && !splitList(row['Underlying Tech']).some(t => t.toLowerCase() === techVal.toLowerCase())) return false;
+    return true;
+  });
+
+  if(sortBy === 'name') list.sort((a,b)=> a['Startup Name'].localeCompare(b['Startup Name']));
+  if(sortBy === 'year-desc') list.sort((a,b)=> (parseInt(b['Founded In'])||0) - (parseInt(a['Founded In'])||0));
+  if(sortBy === 'year-asc') list.sort((a,b)=> (parseInt(a['Founded In'])||0) - (parseInt(b['Founded In'])||0));
+  if(sortBy === 'lifespan-asc') list.sort((a,b)=> (lifespanYears(a) ?? 999) - (lifespanYears(b) ?? 999));
+  if(sortBy === 'lifespan-desc') list.sort((a,b)=> (lifespanYears(b) ?? -1) - (lifespanYears(a) ?? -1));
+  if(sortBy === 'funding-desc') list.sort((a,b)=> parseFundingValue(b['Funding Amount']) - parseFundingValue(a['Funding Amount']));
+
+  render(list);
+
+  clearTimeout(missTimer);
+  if(list.length === 0 && q.trim().length > 1){
+    missTimer = setTimeout(()=> logMissedSearch(q.trim()), 1200);
+  }
+}
+
+function populateFilters(data){
+  const sectors = [...new Set(data.map(r=>r['Sector']).filter(Boolean))].sort();
+  const reasons = [...new Set(data.map(r=>clean(r['Failure Reason'])).filter(Boolean))].sort();
+  const techValues = [...new Set(data.flatMap(r=>splitList(r['Underlying Tech'])))].sort();
+
+  const sf = document.getElementById('sectorFilter');
+  sf.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
+  sectors.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; sf.appendChild(o); });
+
+  const rf = document.getElementById('reasonFilter');
+  rf.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
+  reasons.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; rf.appendChild(o); });
+
+  const tf = document.getElementById('techFilter');
+  tf.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
+  techValues.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; tf.appendChild(o); });
+}
+
+// Lower = slower scroll. This is a constant speed in pixels/second — the
+// animation's duration is calculated from it below, rather than using a
+// fixed duration, so the visual speed never changes as more startups are added.
+const TICKER_PIXELS_PER_SECOND = 40;
+
+function buildTicker(data){
+  const items = data.map(r=> {
+    const life = lifespanYears(r);
+    return `<span><b>${E(r['Startup Name'])}</b> — ${E(clean(r['Failure Reason']) || 'Shut down')} · ${life !== null ? life + ' yr' + (life === 1 ? '' : 's') : '—'}</span>`;
+  }).join('');
+  const ticker = document.getElementById('ticker');
+  ticker.innerHTML = items + items;
+
+  // Reset the animation so a resize/re-render doesn't just resume mid-cycle at the old speed.
+  ticker.style.animation = 'none';
+  // Wait a frame so scrollWidth reflects the newly-rendered content before measuring.
+  requestAnimationFrame(()=>{
+    const singleSetWidth = ticker.scrollWidth / 2; // one un-duplicated pass (keyframes move -50%)
+    const duration = Math.max(singleSetWidth / TICKER_PIXELS_PER_SECOND, 8); // 8s floor so a near-empty ticker doesn't flash by
+    ticker.style.animation = `scroll ${duration}s linear infinite`;
+  });
+}
+
+function buildStats(data){
+  const totalRaised = data.reduce((sum, r) => sum + parseFundingValue(r['Funding Amount']), 0);
+  const lifespans = data.map(lifespanYears).filter(v => v !== null);
+  const avgLife = lifespans.length ? (lifespans.reduce((a,b)=>a+b,0) / lifespans.length) : null;
+  const reasonCounts = {};
+  data.forEach(r=>{
+    const reason = clean(r['Failure Reason']);
+    if(reason) reasonCounts[reason] = (reasonCounts[reason] || 0) + 1;
+  });
+  const topReason = Object.entries(reasonCounts).sort((a,b)=> b[1]-a[1])[0];
+
+  function fmtMoney(n){
+    if(n >= 1000000) return `$${(n/1000000).toFixed(1)}M`;
+    if(n >= 1000) return `$${(n/1000).toFixed(0)}K`;
+    return n ? `$${n}` : '—';
+  }
+
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat"><b>${data.length}</b><span>Startups tracked</span></div>
+    <div class="stat"><b>${fmtMoney(totalRaised)}</b><span>Capital burned</span></div>
+    <div class="stat"><b>${avgLife !== null ? avgLife.toFixed(1) + ' yr' : '—'}</b><span>Avg. lifespan</span></div>
+    <div class="stat"><b>${topReason ? E(topReason[0]) : '—'}</b><span>Top failure reason</span></div>
+  `;
+}
+
+function parseCsvText(text){
+  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  // Rows with Visible = No / False / 0 / Hide are not shown. Blank or Yes = shown.
+  ALL = results.data.filter(r => clean(r['Startup Name']) && !/^(no|false|0|hide|hidden)$/i.test((r['Visible'] || '').trim()));
+  // Accept either "Funding Stage" or "Funding stage" as the column header.
+  ALL.forEach(r => { if(!r['Funding Stage'] && r['Funding stage']) r['Funding Stage'] = r['Funding stage']; });
+  // Drop any compared startups that no longer exist after a live refresh.
+  COMPARE_SELECTED = COMPARE_SELECTED
+    .map(sel => ALL.find(r => r['Startup Name'] === sel['Startup Name']))
+    .filter(Boolean);
+  updateCompareTray();
+  populateFilters(ALL);
+  buildTicker(ALL);
+  buildStats(ALL);
+  applyFilters();
+  openFromHash();
+}
+
+function setSyncBadge(state){
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  if(state === 'live'){
+    el.textContent = '● LIVE';
+    el.style.color = '#4d7a52';
+    const n = document.getElementById('syncNote'); if(n) n.remove();
+  } else if(state === 'loading'){
+    el.textContent = '● SYNCING';
+    el.style.color = 'var(--ink-dim)';
+  } else {
+    el.textContent = '● SAMPLE DATA';
+    el.style.color = 'var(--rust)';
+    el.title = "Could not reach your Google Sheet, so only the built-in sample startups are shown.";
+    if(!document.getElementById('syncNote') && state === 'failed'){
+      const n = document.createElement('div'); n.id = 'syncNote'; n.className = 'sync-note'; n.setAttribute('role','status');
+      n.innerHTML = "<b>Couldn't load your Google Sheet.</b> Showing built-in sample startups instead. In Google Sheets choose File &rarr; Share &rarr; Publish to web, publish the <i>Failed Startups</i> tab as CSV, and make sure the link matches <code>CSV_URL</code> in this file.";
+      document.querySelector('main').insertBefore(n, document.getElementById('grid'));
+    }
+  }
+}
+
+// ============================================================
+// STARTUP COMPARISON (up to four companies)
+// ============================================================
+let COMPARE_SELECTED = [];
+function lifespanText(row){
+  const life = lifespanYears(row);
+  return life === null ? '' : `${life} year${life === 1 ? '' : 's'}`;
+}
+// [label, getter] — getters let us include computed values like lifespan.
+const COMPARE_FIELDS = [
+  ['Status',               r => r['Status'] || 'Failed'],
+  ['Sector',               r => r['Sector']],
+  ['Headquarters',         r => r['Headquarters']],
+  ['Founded',              r => r['Founded In']],
+  ['Shut down',            r => r['Shutdown Year']],
+  ['Lifespan',             r => lifespanText(r)],
+  ['Funding raised',       r => r['Funding Amount']],
+  ['Funding stage',        r => r['Funding Stage']],
+  ['Business model',       r => r['Business Model']],
+  ['Failure reason',       r => r['Failure Reason']],
+  ['Key lesson',           r => r['Epitaph / Key Lesson']],
+  ['Underlying technology',r => r['Underlying Tech']],
+  ['Founders',             r => r['Founders']],
+  ['Key investors',        r => r['Key Investors']],
+  ['Primary competition',  r => r['Primary Competition']],
+  ['Team size',            r => r['Team Size']],
+  ['User base',            r => r['User Base']],
+];
+function compareValue(row, getter){ return clean(getter(row) || '') || '—'; }
+function escapeCompareText(value){ return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toggleCompare(row){
+  const name = clean(row['Startup Name']);
+  const index = COMPARE_SELECTED.findIndex(x=>x['Startup Name']===name);
+  if(index>=0) COMPARE_SELECTED.splice(index,1);
+  else if(COMPARE_SELECTED.length<4) COMPARE_SELECTED.push(row);
+  else { alert('You can compare up to four startups at a time.'); return; }
+  updateCompareTray();
+  updateCompareButtons();
+  syncModalCompareButton(row);
+}
+function removeCompare(name){
+  COMPARE_SELECTED = COMPARE_SELECTED.filter(x=>x['Startup Name']!==name);
+  updateCompareTray();
+  updateCompareButtons();
+  syncModalCompareButton({ 'Startup Name': name });
+}
+function updateCompareTray(){
+  const tray = document.getElementById('compareTray');
+  const chips = document.getElementById('compareChips');
+  document.getElementById('compareCount').textContent = COMPARE_SELECTED.length;
+  chips.innerHTML = COMPARE_SELECTED.map(r=>`<span class="compare-chip">${escapeCompareText(r['Startup Name'])} <button aria-label="Remove ${escapeCompareText(r['Startup Name'])}" data-remove="${encodeURIComponent(r['Startup Name'])}">×</button></span>`).join('');
+  chips.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>removeCompare(decodeURIComponent(b.dataset.remove))));
+  tray.classList.toggle('visible', COMPARE_SELECTED.length>0);
+  document.getElementById('openCompare').disabled = COMPARE_SELECTED.length<2;
+}
+function updateCompareButtons(){
+  document.querySelectorAll('.compare-btn[data-compare]').forEach(btn=>{
+    const name = decodeURIComponent(btn.dataset.compare);
+    const selected = COMPARE_SELECTED.some(r=>r['Startup Name']===name);
+    btn.classList.toggle('selected', selected);
+    btn.textContent = selected ? '✓ Added to compare' : '+ Compare';
+  });
+}
+function syncModalCompareButton(row){
+  const btn = document.getElementById('modalCompareBtn'); if(!btn) return;
+  const selected = COMPARE_SELECTED.some(r=>r['Startup Name']===row['Startup Name']);
+  btn.classList.toggle('selected', selected);
+  btn.textContent = selected ? '✓ Remove from comparison' : '+ Add to comparison';
+}
+function openCompareModal(){
+  if(COMPARE_SELECTED.length<2) return;
+  const modal = document.getElementById('compareModalContent');
+  const headers = COMPARE_SELECTED.map(r=>`<th>${escapeCompareText(r['Startup Name'])}</th>`).join('');
+  const rows = COMPARE_FIELDS.map(([label,getter])=>`<tr><th>${escapeCompareText(label)}</th>${COMPARE_SELECTED.map(r=>`<td>${escapeCompareText(compareValue(r,getter))}</td>`).join('')}</tr>`).join('');
+  modal.innerHTML = `<button class="modal-close" id="closeCompare">&times;</button><h2>Compare startups</h2><p class="modal-tagline">A side-by-side look at how these companies lived and died.</p><div class="compare-scroll"><table class="compare-table"><thead><tr><th>Details</th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('closeCompare').addEventListener('click', closeCompareModal);
+  document.getElementById('compareOverlay').classList.add('open');
+}
+function closeCompareModal(){ document.getElementById('compareOverlay').classList.remove('open'); }
+document.getElementById('clearCompare').addEventListener('click',()=>{
+  COMPARE_SELECTED = [];
+  updateCompareTray();
+  updateCompareButtons();
+  syncModalCompareButton({ 'Startup Name': '' });
+});
+document.getElementById('openCompare').addEventListener('click', openCompareModal);
+document.getElementById('compareOverlay').addEventListener('click', e=>{ if(e.target.id==='compareOverlay') closeCompareModal(); });
+
+function loadData(){
+  parseCsvText(FALLBACK_CSV);
+  setSyncBadge('loading');
+
+  if(!CSV_URL || CSV_URL.indexOf("PASTE_YOUR") === 0){
+    console.warn("CSV_URL not configured yet — showing the fallback snapshot only.");
+    return;
+  }
+
+  fetch(CSV_URL, { cache: "no-store" })
+    .then(res => { if(!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
+    .then(text => {
+      if(!text || text.trim().length === 0) throw new Error("Empty response");
+      parseCsvText(text);
+      setSyncBadge('live');
+    })
+    .catch((err) => {
+      console.warn('[graveyard] Failed Startups sheet did not load:', err && err.message);
+      setSyncBadge('failed');
+    });
+}
+
+// ============================================================
+// MISSED-SEARCH LOGGING (optional) — same pattern as the Active
+// Ledger. Paste an Apps Script Web App URL below if you want
+// zero-result searches logged to a sheet tab. Leave as-is to skip.
+// ============================================================
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+const loggedTerms = new Set();
+let missTimer = null;
+
+function logMissedSearch(term){
+  term = term.trim().toLowerCase();
+  if(!term || loggedTerms.has(term)) return;
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.indexOf("PASTE_YOUR") === 0){
+    return;
+  }
+  loggedTerms.add(term);
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({ keyword: term }),
+    headers: { "Content-Type": "text/plain;charset=utf-8" }
+  }).catch(()=>{});
+}
+
+loadData();
+loadFoundersData();
+
+document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('sectorFilter').addEventListener('change', applyFilters);
+document.getElementById('reasonFilter').addEventListener('change', applyFilters);
+document.getElementById('techFilter').addEventListener('change', applyFilters);
+document.getElementById('sortBy').addEventListener('change', applyFilters);
+</script>
+<script>
+// card spotlight follows the pointer
+document.addEventListener('pointermove', e=>{ const c = e.target.closest && e.target.closest('.card'); if(!c) return; const r = c.getBoundingClientRect(); c.style.setProperty('--mx',(e.clientX-r.left)+'px'); c.style.setProperty('--my',(e.clientY-r.top)+'px'); }, {passive:true});
+// Esc closes the top-most popup
+document.addEventListener('keydown', e=>{ if(e.key!=='Escape') return; for(const id of ['submitOverlay','listOverlay','compareOverlay','overlay']){ const o=document.getElementById(id); if(o && o.classList.contains('open')){ o.classList.remove('open'); if(id==='overlay') closeModal(); break; } } });
+</script>
+<script src="graveyard-extras.js" defer></script>
+<script src="site.js" defer></script>
+</body>
+</html>

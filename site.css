@@ -109,10 +109,7 @@ a.ul-card:hover,.ul-card.tilt:hover{transform:translateY(-4px);border-color:var(
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
 
 /* ===== v2 redesign layer ===== */
-@view-transition{navigation:auto}
-::view-transition-old(root),::view-transition-new(root){animation-duration:.24s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
-.ul-nav{view-transition-name:ulnav;transition:background-color .25s,border-color .25s}
-::view-transition-group(ulnav){animation:none}
+.ul-nav{transition:background-color .25s,border-color .25s}
 .ul-nav.scrolled{background:rgba(232,225,211,.96);border-bottom-color:rgba(140,59,46,.3)}
 .ul-eyebrow{text-transform:none;letter-spacing:.02em;font-size:13px}
 .ul-btn{transition:transform .18s cubic-bezier(.2,.8,.2,1),background-color .18s,border-color .18s,color .18s}
@@ -142,7 +139,7 @@ a.ul-card:hover,.ul-card.tilt:hover{transform:translateY(-4px);border-color:var(
 @keyframes ul-fade{to{opacity:1}}
 @keyframes ul-drift{to{transform:translate(-12vmax,8vmax) scale(1.15)}}
 @keyframes ul-tape{to{transform:translateX(-50%)}}
-@media(prefers-reduced-motion:reduce){.ul-hero .w>span{transform:none;animation:none}.ul-hero .ul-lead,.ul-hero .ul-cta{opacity:1;animation:none}.ul-aurora::before,.ul-tape-in{animation:none}::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+@media(prefers-reduced-motion:reduce){.ul-hero .w>span{transform:none;animation:none}.ul-hero .ul-lead,.ul-hero .ul-cta{opacity:1;animation:none}.ul-aurora::before,.ul-tape-in{animation:none}}
 .ul-mark:has(img){border:0;border-radius:7px}
 
 
