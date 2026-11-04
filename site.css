@@ -5,7 +5,7 @@ body.ul-page{margin:0;background:var(--ink);color:var(--paper);font-family:var(-
 body.ul-page ::selection{background:var(--gold);color:var(--ink)}
 /* nav */
 .ul-nav{position:sticky;top:0;z-index:200;background:rgba(232,225,211,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--rule);font-family:var(--sans);color:var(--paper)}
-.ul-nav-in{max-width:1180px;margin:0 auto;padding:0 24px;height:var(--ul-nav-h);display:flex;align-items:center;gap:28px}
+.ul-nav-in{max-width:1180px;margin:0 auto;padding:0 24px;height:64px;max-height:64px;display:flex;align-items:center;gap:28px}
 .ul-brand{display:flex;align-items:center;gap:10px;color:var(--paper);text-decoration:none;font:500 19px var(--serif)}
 .ul-mark{width:30px;height:30px;border:1px solid var(--gold);color:var(--gold);display:grid;place-items:center;border-radius:3px;font:500 15px var(--serif);overflow:hidden}
 .ul-mark img{width:100%;height:100%;object-fit:contain}

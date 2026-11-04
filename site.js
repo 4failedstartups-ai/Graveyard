@@ -78,7 +78,7 @@ function head(){
  add("link",{rel:"manifest",href:"site.webmanifest"});
  add("meta",{name:"theme-color",content:"#E8E1D3"});
  add("link",{rel:"stylesheet",href:"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"});
- add("style",{textContent:"@view-transition{navigation:none}.ul-nav{view-transition-name:none!important}"});
+ add("style",{textContent:"@view-transition{navigation:none}.ul-nav{view-transition-name:none!important}.ul-nav-in{height:64px!important;max-height:64px}"});
 }
 function shell(S,nav){
  const here=location.pathname.split("/").pop()||"index.html";
@@ -116,7 +116,10 @@ function shell(S,nav){
  <div class="ul-groups">${cols}</div><div><h4>Get in touch</h4>${ct}</div></div>
  <div class="ul-copy"><span>${esc(S.copyright)}</span><a href="#" style="display:inline" onclick="window.scrollTo({top:0,behavior:'smooth'});return false">Back to top</a></div>`;
  document.body.appendChild(ft);
- const h=nv.offsetHeight;if(h)document.documentElement.style.setProperty("--ul-nav-h",h+"px");
+ // Nav height is fixed at 64px (+1px border). Never trust a measurement taken before the stylesheet has loaded.
+ const fixNav=()=>{const h=nv.offsetHeight;document.documentElement.style.setProperty("--ul-nav-h",(h>=48&&h<=96?h:65)+"px")};
+ fixNav();const sl=document.querySelector('link[href^="site.css"]');if(sl){sl.addEventListener("load",fixNav);if(sl.sheet)fixNav()}
+ addEventListener("load",fixNav);
 }
 
 // ====== pages ======
