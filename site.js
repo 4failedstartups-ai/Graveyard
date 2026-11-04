@@ -70,7 +70,7 @@ async function getSettings(){const d=await get("settings");const s=Object.assign
 // ====== shell ======
 function head(){
  const add=(tag,attrs)=>{const e=document.createElement(tag);Object.assign(e,attrs);document.head.appendChild(e)};
- add("link",{rel:"stylesheet",href:"site.css?v=5"});
+ window.GY_BUILD="6";if(!document.querySelector('link[href^="site.css"]'))add("link",{rel:"stylesheet",href:"site.css?v=6"});
  if(/^(home|support)$/.test(document.body.dataset.page||""))["gazette.css","support.css"].forEach(h=>add("link",{rel:"stylesheet",href:h+"?v=5"}));
  add("link",{rel:"icon",type:"image/png",sizes:"48x48",href:"favicon-48.png"});
  add("link",{rel:"icon",type:"image/png",sizes:"32x32",href:"favicon-32.png"});
@@ -86,7 +86,7 @@ function shell(S,nav){
  const link=(r,cls)=>{const u=clean(r.URL)||"#";const on=u.split("/").pop()===here||(here==="index.html"&&(u==="/"||u==="index.html"));
   return `<a href="${esc(url(u))}"${/^https?:/.test(u)&&!u.includes(location.host)?' target="_blank" rel="noopener"':""} class="${on?"on":""}">${esc(r.Label)}</a>`};
  const loc=(r,w)=>{const l=(r.Location||"header").toLowerCase();return l==="both"||l===w};
- const mark=S.logo_url?`<img src="${esc(drive(S.logo_url))}" alt="">`:esc(initials(S.site_name).charAt(0));
+ const mark=S.logo_url?`<img src="${esc(drive(S.logo_url))}" alt="" width="34" height="34">`:esc(initials(S.site_name).charAt(0));
  const brand=`<a class="ul-brand" href="index.html"><span class="ul-mark">${mark}</span><span>${esc(S.site_name)}</span></a>`;
  const nv=document.createElement("div");nv.className="ul-nav";
  nv.innerHTML=`<div class="ul-nav-in">${brand}<nav class="ul-links" id="ulLinks">${items.filter(r=>loc(r,"header")).map(link).join("")}</nav><button class="ul-burger" aria-label="Menu" id="ulBurger">☰</button></div>`;
@@ -218,6 +218,6 @@ async function boot0(){
  if(/[?&]debug\b/.test(location.search))debugPanel(S)
 }
 function debugPanel(S){const d=document.createElement("div");d.style.cssText="position:fixed;z-index:99999;right:12px;bottom:12px;max-width:380px;background:#221E1A;color:#E8E1D3;font:12px/1.6 monospace;padding:14px 16px;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.4)";
- d.innerHTML="<b>Sheet connection</b><br>"+["graveyard","settings","nav","pages","team","highlights"].map(k=>k+": "+esc(STATUS[k]||"not requested on this page")).join("<br>")+"<br><br>Add ?debug to any page address to see this.";document.body.appendChild(d)}
+ d.innerHTML="<b>Build "+window.GY_BUILD+" · nav "+(document.querySelector(".ul-nav")||{}).offsetHeight+"px</b><br><b>Sheet connection</b><br>"+["graveyard","settings","nav","pages","team","highlights"].map(k=>k+": "+esc(STATUS[k]||"not requested on this page")).join("<br>")+"<br><br>Add ?debug to any page address to see this.";document.body.appendChild(d)}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
