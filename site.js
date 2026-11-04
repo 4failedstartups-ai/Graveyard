@@ -70,14 +70,15 @@ async function getSettings(){const d=await get("settings");const s=Object.assign
 // ====== shell ======
 function head(){
  const add=(tag,attrs)=>{const e=document.createElement(tag);Object.assign(e,attrs);document.head.appendChild(e)};
- add("link",{rel:"stylesheet",href:"site.css"});
- if(/^(home|support)$/.test(document.body.dataset.page||""))["gazette.css","support.css"].forEach(h=>add("link",{rel:"stylesheet",href:h}));
+ add("link",{rel:"stylesheet",href:"site.css?v=5"});
+ if(/^(home|support)$/.test(document.body.dataset.page||""))["gazette.css","support.css"].forEach(h=>add("link",{rel:"stylesheet",href:h+"?v=5"}));
  add("link",{rel:"icon",type:"image/png",sizes:"48x48",href:"favicon-48.png"});
  add("link",{rel:"icon",type:"image/png",sizes:"32x32",href:"favicon-32.png"});
  add("link",{rel:"apple-touch-icon",href:"apple-touch-icon.png"});
  add("link",{rel:"manifest",href:"site.webmanifest"});
  add("meta",{name:"theme-color",content:"#E8E1D3"});
  add("link",{rel:"stylesheet",href:"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"});
+ add("style",{textContent:"@view-transition{navigation:none}.ul-nav{view-transition-name:none!important}"});
 }
 function shell(S,nav){
  const here=location.pathname.split("/").pop()||"index.html";
