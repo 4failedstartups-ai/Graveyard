@@ -42,6 +42,8 @@ const url=u=>/^\s*(javascript|data|vbscript):/i.test(u)?"#":u;
 const clean=v=>{v=(v||"").trim();return v==="-"?"":v};
 const pc=v=>String(v==null?"":v).trim().toLowerCase().replace(/(^|[\s\-'’.(\/])([a-z\u00c0-\u024f])/g,(m,a,b)=>a+b.toUpperCase());
 const vis=r=>!/^(no|false|0|hide|hidden)$/i.test((r.Visible||"").trim());
+// Startups: shown ONLY when Visible is exactly "Yes" (blank / No / anything else = hidden).
+const visStartup=r=>/^yes$/i.test((r.Visible||"").trim());
 const by=(a,b)=>(parseFloat(a.Order)||99)-(parseFloat(b.Order)||99);
 const inline=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\[([^\]]+)\]\(([^)\s]+)\)/g,(m,t,u)=>`<a href="${url(u)}">${t}</a>`);
 function md(t){const o=[];let ul=false;String(t||"").split(/\r?\n/).forEach(l=>{l=l.trim();
@@ -170,8 +172,8 @@ async function homeData(){
  let rows=[];
  try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js");
   const t=await fetch(`${SHEET}?gid=${GIDS.graveyard}&single=true&output=csv`,{cache:"no-store"}).then(r=>r.text());
-  rows=Papa.parse(t,{header:true,skipEmptyLines:true}).data.filter(r=>clean(r["Startup Name"])&&vis(r));STATUS.graveyard="live ("+rows.length+" rows)";try{localStorage.setItem("gy_rows",JSON.stringify(rows))}catch(e){}}
- catch(e){try{rows=JSON.parse(localStorage.getItem("gy_rows"))||[]}catch(x){rows=[]}STATUS.graveyard="FAILED to load: is the Failed Startups tab published to the web?"+(rows.length?" Using last saved copy":"");console.warn("[graveyard] "+STATUS.graveyard)}
+  rows=Papa.parse(t,{header:true,skipEmptyLines:true}).data.filter(r=>clean(r["Startup Name"])&&visStartup(r));STATUS.graveyard="live ("+rows.length+" rows)";try{localStorage.setItem("gy_rows",JSON.stringify(rows))}catch(e){}}
+ catch(e){try{rows=(JSON.parse(localStorage.getItem("gy_rows"))||[]).filter(visStartup)}catch(x){rows=[]}STATUS.graveyard="FAILED to load: is the Failed Startups tab published to the web?"+(rows.length?" Using last saved copy":"");console.warn("[graveyard] "+STATUS.graveyard)}
  const life=r=>{const a=parseInt(r["Founded In"]),b=parseInt(r["Shutdown Year"]);return a&&b&&b>=a?b-a:null};
  document.querySelectorAll("#ulStats b[data-v^='auto:']").forEach(b=>{const k=b.dataset.v;
   if(k==="auto:startups"){b.dataset.v=rows.length?String(rows.length):"—";b.textContent=b.dataset.v}

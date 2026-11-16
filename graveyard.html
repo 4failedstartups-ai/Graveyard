@@ -1126,10 +1126,11 @@ function buildStats(data){
   `;
 }
 
-function parseCsvText(text){
+function parseCsvText(text, isSample){
   const results = Papa.parse(text, { header: true, skipEmptyLines: true });
-  // Rows with Visible = No / False / 0 / Hide are not shown. Blank or Yes = shown.
-  ALL = results.data.filter(r => clean(r['Startup Name']) && !/^(no|false|0|hide|hidden)$/i.test((r['Visible'] || '').trim()));
+  // A startup is shown ONLY when its Visible cell is exactly "Yes". Blank, "No" or anything else = hidden.
+  // (The built-in sample rows used when the Sheet can't be reached are exempt.)
+  ALL = results.data.filter(r => clean(r['Startup Name']) && (isSample || /^yes$/i.test((r['Visible'] || '').trim())));
   // Accept either "Funding Stage" or "Funding stage" as the column header.
   ALL.forEach(r => { if(!r['Funding Stage'] && r['Funding stage']) r['Funding Stage'] = r['Funding stage']; });
   // Drop any compared startups that no longer exist after a live refresh.
@@ -1255,7 +1256,7 @@ document.getElementById('openCompare').addEventListener('click', openCompareModa
 document.getElementById('compareOverlay').addEventListener('click', e=>{ if(e.target.id==='compareOverlay') closeCompareModal(); });
 
 function loadData(){
-  parseCsvText(FALLBACK_CSV);
+  parseCsvText(FALLBACK_CSV, true);
   setSyncBadge('loading');
 
   if(!CSV_URL || CSV_URL.indexOf("PASTE_YOUR") === 0){
