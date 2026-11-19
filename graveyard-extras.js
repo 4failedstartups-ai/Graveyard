@@ -237,7 +237,9 @@ function draw(){
   document.querySelectorAll("#hmCities li[data-i]").forEach((li,i)=>li.onclick=()=>open("City — "+tc[i][0],tc[i][2]));
   const placed=ALL.length-Object.values(unplaced).reduce((a,b)=>a+b,0);
   const miss=Object.keys(unplaced);
-  document.getElementById("hmNote").textContent=`${placed} of ${ALL.length} startups placed`+(miss.length?` · not placed: ${miss.slice(0,5).join(", ")}${miss.length>5?"…":""}`:"");
+  // Kept off the public site on purpose: the dashboard reads this to show "N of M placed / not placed".
+  window.GY_PLACEMENT={placed,total:ALL.length,notPlaced:miss};
+  const hn=document.getElementById("hmNote");if(hn)hn.textContent="";
 }
 draw();
 // The ledger redraws its count pill whenever data loads/changes — use that as our cue to refresh.

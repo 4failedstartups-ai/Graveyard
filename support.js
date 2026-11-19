@@ -15,6 +15,7 @@ const TIERS=[
  {amt:100,  title:"Keep the Cheers Coming",icon:"🥂",fill:.62,line:"Keeping the taps running."},
  {amt:500,  title:"Party Sponsor",         icon:"🎉",fill:.82,line:"Now it's a proper party."},
  {amt:5000, title:"Sponsor the Bar",       icon:"👑",fill:1,  line:"The whole bar is on you."}];
+const MIN_AMT=10,MAX_AMT=100000;
 const TITLES=["Head Brewer","Round Master","Bar Regular","Rising Sipper","Rising Sipper"];
 const DEMO_SEED=[{name:"Aarav K.",total:1500,count:4},{name:"Meera S.",total:650,count:3},{name:"Rohan P.",total:300,count:2},{name:"Isha N.",total:110,count:2},{name:"Dev M.",total:60,count:2}];
 const clean=n=>String(n||"").replace(/[^\p{L}\p{N} ._@-]/gu,"").replace(/\s+/g," ").trim().slice(0,20);
@@ -51,6 +52,9 @@ function mount(el,S){
      <div class="bb-tiers" id="bbTiers" role="radiogroup" aria-labelledby="bbLbl"><i class="bb-pill" id="bbPill"></i>
       ${TIERS.map((t,i)=>`<button type="button" role="radio" aria-checked="${i===sel}" data-i="${i}" class="bb-tier${i===sel?" on":""}"><span class="ic">${t.icon}</span><span class="tt">${esc(t.title)}</span><span class="pr">${inr(t.amt)}</span></button>`).join("")}
      </div>
+     <div class="bb-custom" id="bbCustom"><label for="bbOwn">Or enter your own amount</label>
+      <div class="bb-own"><span aria-hidden="true">₹</span><input id="bbOwn" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Minimum ${MIN_AMT}" aria-describedby="bbOwnErr"><i class="bb-own-hint">min ${inr(MIN_AMT)}</i></div>
+      <div class="bb-err" id="bbOwnErr" role="alert"></div></div>
      <label class="bb-field"><span>Name on the leaderboard</span><input id="bbName" maxlength="20" placeholder="e.g. Kunal" aria-describedby="bbHint"></label>
      <label class="bb-chk"><input type="checkbox" id="bbAnon"><i></i><span>Keep me anonymous (shows as “Anonymous Drinker”)</span></label>
      <button class="bb-pay" id="bbPay" type="submit"><span class="bb-pay-in"><span class="bb-pay-ic">🍺</span><span class="bb-pay-t">Buy Me a Beer</span><span class="bb-pay-a" id="bbPayAmt">₹50</span></span></button>
@@ -70,20 +74,30 @@ function mount(el,S){
 
   /* ----- tier selection: sliding pill + glass fills ----- */
   const movePill=()=>{const b=$(".bb-tier.on",el);if(!b)return;pill.style.transform=`translateY(${b.offsetTop}px)`;pill.style.height=b.offsetHeight+"px"};
-  const setTier=(i,quiet)=>{sel=i;const t=TIERS[i];
-    $$(".bb-tier",el).forEach((b,k)=>{b.classList.toggle("on",k===i);b.setAttribute("aria-checked",k===i);b.tabIndex=k===i?0:-1});
-    movePill();
+  let curT=TIERS[1];const own=$("#bbOwn",el),ownErr=$("#bbOwnErr",el);
+  const customTier=v=>({amt:v,title:"Your own round",icon:v>=5000?"👑":v>=500?"🎉":v>=100?"🥂":v>=50?"🍻":"🍺",fill:Math.min(1,.2+Math.log10(Math.max(v,MIN_AMT)/MIN_AMT)/Math.log10(500)*.8),line:"Your round, your rules."});
+  const paint=(t,quiet)=>{curT=t;
     liq.style.transform=`translateY(${196-t.fill*138}px)`;
-    $("#bbIcon",el).textContent=t.icon;$("#bbLine",el).textContent=t.line;$("#bbPay",el).classList.toggle("big",i===4);
+    $("#bbIcon",el).textContent=t.icon;$("#bbLine",el).textContent=t.line;$("#bbPay",el).classList.toggle("big",t.amt>=5000);
     tickAmt($("#bbAmt",el),t.amt);tickAmt($("#bbPayAmt",el),t.amt);$(".bb-pay-ic",el).textContent=t.icon;
-    if(!quiet){const g=$("#bbGlass",el);g.classList.remove("clink");void g.offsetWidth;g.classList.add("clink")}
-  };
+    if(!quiet){const g=$("#bbGlass",el);g.classList.remove("clink");void g.offsetWidth;g.classList.add("clink")}};
+  const setTier=(i,quiet)=>{sel=i;
+    $$(".bb-tier",el).forEach((b,k)=>{b.classList.toggle("on",k===i);b.setAttribute("aria-checked",k===i);b.tabIndex=k===i?0:-1});
+    pill.style.opacity=1;own.value="";ownErr.textContent="";$("#bbCustom",el).classList.remove("on","bad");
+    movePill();paint(TIERS[i],quiet)};
+  const ownVal=()=>{const d=own.value.replace(/\D/g,"");return d?parseInt(d,10):0};
+  own.addEventListener("input",()=>{const d=own.value.replace(/\D/g,"").slice(0,6);if(d!==own.value)own.value=d;const v=ownVal(),box=$("#bbCustom",el);
+    if(!d){ownErr.textContent="";box.classList.remove("on","bad");setTier(sel<0?1:sel);return}
+    sel=-1;$$(".bb-tier",el).forEach(b=>{b.classList.remove("on");b.setAttribute("aria-checked","false")});pill.style.opacity=0;box.classList.add("on");
+    if(v<MIN_AMT){box.classList.add("bad");ownErr.textContent=`The minimum is ${inr(MIN_AMT)}.`;paint(customTier(MIN_AMT),true)}
+    else if(v>MAX_AMT){box.classList.add("bad");ownErr.textContent=`The maximum is ${inr(MAX_AMT)} per payment.`;paint(customTier(MAX_AMT),true)}
+    else{box.classList.remove("bad");ownErr.textContent="";paint(customTier(v),true)}});
   const amtState=new WeakMap();
   function tickAmt(node,to){const from=amtState.get(node)||0;amtState.set(node,to);if(reduce||!from){node.textContent=inr(to);return}
     let t0;const f=t=>{t0=t0||t;const p=Math.min((t-t0)/450,1),e=1-Math.pow(1-p,3);node.textContent=inr(Math.round(from+(to-from)*e));if(p<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
   $("#bbTiers",el).addEventListener("click",e=>{const b=e.target.closest(".bb-tier");if(b)setTier(+b.dataset.i)});
   $("#bbTiers",el).addEventListener("keydown",e=>{const k={ArrowDown:1,ArrowRight:1,ArrowUp:-1,ArrowLeft:-1}[e.key];if(!k)return;e.preventDefault();
-    const n=(sel+k+TIERS.length)%TIERS.length;setTier(n);$$(".bb-tier",el)[n].focus()});
+    const n=((sel<0?1:sel)+k+TIERS.length)%TIERS.length;setTier(n);$$(".bb-tier",el)[n].focus()});
   setTier(1,true);addEventListener("resize",movePill);(document.fonts&&document.fonts.ready||Promise.resolve()).then(movePill);
   new IntersectionObserver((es,o)=>{if(es.some(x=>x.isIntersecting)){movePill();o.disconnect()}}).observe(root);
 
@@ -113,8 +127,9 @@ function mount(el,S){
   const lock=b=>{busy=b;$("#bbPay",el).disabled=b;$("#bbPay",el).classList.toggle("busy",b)};
   const nameNow=()=>$("#bbAnon",el).checked?"Anonymous Drinker":clean($("#bbName",el).value);
   $("#bbAnon",el).onchange=function(){$("#bbName",el).disabled=this.checked;$("#bbName",el).closest(".bb-field").classList.toggle("off",this.checked)};
-  $("#bbForm",el).onsubmit=async e=>{e.preventDefault();if(busy)return;const t=TIERS[sel],name=nameNow();
+  $("#bbForm",el).onsubmit=async e=>{e.preventDefault();if(busy)return;const t=curT,name=nameNow();
     if(name.length<2){say("Add a name (2 to 20 characters) or tick “Keep me anonymous”.","err");$("#bbName",el).focus();return}
+    if(sel<0){const v=ownVal();if(v<MIN_AMT||v>MAX_AMT){say(v<MIN_AMT?`The minimum amount is ${inr(MIN_AMT)}.`:`The maximum amount is ${inr(MAX_AMT)}.`,"err");own.focus();return}}
     say("");lock(true);
     try{
       if(demo){say("Pouring…","");await new Promise(r=>setTimeout(r,900));const a=demoGet(),k=name.toLowerCase(),m=a.find(x=>x.name.toLowerCase()===k);

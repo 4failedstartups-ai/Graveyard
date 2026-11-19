@@ -126,3 +126,15 @@ body.ul-page{--beer:#C58A1F;--beer2:#E3AE45;--foam:#F6EFD9;--ease:cubic-bezier(.
 @keyframes gz-pop{from{opacity:0;transform:scale(.85)}}
 
 @media(prefers-reduced-motion:reduce){.bb-card::before,.bb-pay::after,.bb-wave,.bb-bub circle,.bb-emo,.bb-live i,.bb-medal.m1 svg{animation:none}.bb-liq,.bb-pill,.bb-row{transition:none}.bb-glass.clink,.bb-glass.cheers,.bb-row.new,.bb-row.hit{animation:none}}
+
+/* custom amount */
+.bb-custom{margin:-8px 0 20px;padding:14px;border:1px dashed var(--rule);border-radius:12px;transition:border-color .2s,background-color .2s}
+.bb-custom label{display:block;font:10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--gold2);margin-bottom:8px}
+.bb-own{position:relative;display:flex;align-items:center;background:var(--ink);border:1px solid var(--rule);border-radius:10px;transition:border-color .2s,box-shadow .2s}
+.bb-own span{padding:0 4px 0 14px;font:500 20px var(--serif);color:var(--dim)}
+.bb-own input{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--paper);font:500 20px var(--serif);padding:11px 8px 11px 2px;font-variant-numeric:tabular-nums}
+.bb-own-hint{padding-right:14px;font:11px var(--mono);font-style:normal;color:var(--dim)}
+.bb-own:focus-within{border-color:var(--gold);box-shadow:0 0 0 3px rgba(140,59,46,.16)}
+.bb-custom.on{border-style:solid;border-color:var(--paper);background:rgba(255,255,255,.28)}
+.bb-custom.bad .bb-own{border-color:var(--gold)}
+.bb-err{min-height:0;font:12.5px var(--sans);color:var(--gold);margin-top:0}.bb-err:not(:empty){margin-top:8px}

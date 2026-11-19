@@ -8,7 +8,7 @@
  *  3. Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone. Copy the /exec URL.
  *  4. Put that URL in the Settings tab of your site sheet:  support_api_url
  */
-var TIERS = [10, 50, 100, 500, 5000];          // must match the site
+var MIN_AMOUNT = 10, MAX_AMOUNT = 100000;      // rupees; must match the site (preset tiers and custom amounts are all allowed in this range)
 var SHEET = 'Supporters';
 var HEAD = ['Time', 'Payment ID', 'Order ID', 'Name', 'Amount (INR)', 'Status'];
 
@@ -62,7 +62,7 @@ function doPost(e) {
 
 function createOrder_(d) {
   var amt = Number(d.amount);
-  if (TIERS.indexOf(amt) < 0) throw new Error('invalid amount');
+  if (!isFinite(amt) || amt % 1 !== 0 || amt < MIN_AMOUNT || amt > MAX_AMOUNT) throw new Error('invalid amount');
   var name = cleanName_(d.name);
   var o = rzp_('post', '/orders', { amount: amt * 100, currency: 'INR', receipt: 'gy_' + Date.now(), notes: { name: name } });
   return { ok: true, orderId: o.id, amount: o.amount, keyId: prop_('RZP_KEY_ID') };
@@ -81,7 +81,7 @@ function verify_(d) {
   if (p.status !== 'captured') throw new Error('payment not captured');
   var o = rzp_('get', '/orders/' + encodeURIComponent(orderId));
   var amt = o.amount / 100;
-  if (TIERS.indexOf(amt) < 0 || o.amount !== p.amount) throw new Error('amount mismatch');
+  if (amt < MIN_AMOUNT || amt > MAX_AMOUNT || o.amount !== p.amount) throw new Error('amount mismatch');
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     var sh = sheet_(), ids = sh.getRange(2, 2, Math.max(sh.getLastRow() - 1, 1), 1).getValues().map(function (r) { return r[0]; });

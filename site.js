@@ -21,7 +21,7 @@ settings:{site_name:"The Startup Graveyard",tagline:"A record of the Indian star
  footer_blurb:"A record of the startups that didn't make it, and the lessons they left behind.",copyright:"© 2026 The Startup Graveyard. All rights reserved."},
 nav:[{Label:"Home",URL:"index.html",Location:"header",Order:1},{Label:"Graveyard",URL:"graveyard.html",Location:"both",Group:"Directories",Order:2},
  {Label:"About",URL:"about.html",Location:"both",Group:"Company",Order:3},{Label:"Team",URL:"team.html",Location:"both",Group:"Company",Order:4},
- {Label:"Contact",URL:"contact.html",Location:"both",Group:"Company",Order:5},{Label:"Buy me a beer",URL:"support.html",Location:"both",Group:"Company",Order:5.5},{Label:"Terms",URL:"terms.html",Location:"footer",Group:"Resources",Order:6},
+ {Label:"Contact",URL:"contact.html",Location:"both",Group:"Company",Order:5},{Label:"Buy me a beer",URL:"support.html",Location:"both",Group:"Company",Order:5.5},{Label:"Useful Startups ↗",URL:"https://usefulstartups.com/",Location:"footer",Group:"Resources",Order:6},{Label:"Terms",URL:"terms.html",Location:"footer",Group:"Resources",Order:6},
  {Label:"Privacy",URL:"privacy.html",Location:"footer",Group:"Resources",Order:7}],
 highlights:[{Value:"auto:startups",Label:"Startups buried",Order:1},{Value:"auto:avglife",Label:"Avg. lifespan",Order:2},{Value:"100%",Label:"Free to browse",Order:3}],
 team:[],
@@ -93,6 +93,10 @@ function shell(S,nav){
  const nv=document.createElement("div");nv.className="ul-nav";
  nv.innerHTML=`<div class="ul-nav-in">${brand}<nav class="ul-links" id="ulLinks">${items.filter(r=>loc(r,"header")).map(link).join("")}</nav><button class="ul-burger" aria-label="Menu" id="ulBurger">☰</button></div>`;
  document.body.insertBefore(nv,document.body.firstChild);
+ try{if(!sessionStorage.getItem("gy_us_bar")){const bar=document.createElement("div");bar.className="ul-usbar";
+  bar.innerHTML='<a href="https://usefulstartups.com/" target="_blank" rel="noopener"><span class="ul-us-dot"></span><span>Looking for startups that actually <b>work</b>? Explore <u>Useful Startups</u> →</span></a><button type="button" aria-label="Dismiss">×</button>';
+  bar.querySelector("button").onclick=()=>{bar.remove();try{sessionStorage.setItem("gy_us_bar","1")}catch(e){}};
+  document.body.insertBefore(bar,nv)}}catch(e){}
  addEventListener("scroll",()=>nv.classList.toggle("scrolled",scrollY>8),{passive:true});
  $("#ulBurger").onclick=()=>$("#ulLinks").classList.toggle("open");
  const sv=(p,f)=>`<svg viewBox="0 0 24 24" ${f?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'}>${p}</svg>`;

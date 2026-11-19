@@ -40,6 +40,8 @@ function home(rows,S,root){
   const html=rows&&rows.length?front(rows)+autopsy(rows)+wall(rows)+where():"";
   const box=document.createElement("div");box.id="gzRoot";box.innerHTML=html;
   (sec&&sec.parentNode?sec.parentNode:wrap.parentNode).insertBefore(box,sec||wrap);
+  const us=document.createElement("section");us.className="ul-sec";us.innerHTML=`<div class="ul-wrap"><a class="gz-us rv" href="https://usefulstartups.com/" target="_blank" rel="noopener"><div><div class="ul-eyebrow">The other side of the story</div><h2>Want to see startups that actually work?</h2><p class="ul-lead">The graveyard shows what went wrong. Useful Startups is the opposite: a ledger of Indian startups that are alive, useful and growing.</p></div><span class="gz-us-cta">Explore Useful Startups <i>→</i></span></a></div>`;
+  wrap.parentNode.insertBefore(us,wrap);
   const sup=document.createElement("section");sup.className="ul-sec gz-supsec";sup.id="support";
   sup.innerHTML=`<div class="ul-wrap"><div id="gzSupport"></div></div>`;wrap.parentNode.insertBefore(sup,wrap);
   if(rows&&rows.length){wireFront(rows);wireAutopsy(rows);wireWall(rows)}

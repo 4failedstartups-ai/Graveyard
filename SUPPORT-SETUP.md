@@ -26,7 +26,7 @@ With no setup, payments are SIMULATED in the visitor's browser and the board sho
 6. Make a test payment with Razorpay test mode (test UPI/card). A "Supporters" tab appears in the sheet and the board updates.
 7. Swap in LIVE keys in Script properties and redeploy a new version.
 
-How it stays safe: the browser never decides who paid. The script checks Razorpay's signature, asks Razorpay for the payment, confirms it is captured, for that order and for one of the 5 allowed amounts, then writes the row. A payment ID can only count once.
+How it stays safe: the browser never decides who paid. The script checks Razorpay's signature, asks Razorpay for the payment, confirms it is captured, for that order and for an amount between ₹10 and ₹1,00,000, then writes the row. A payment ID can only count once.
 Leaderboard totals are per name (not case sensitive). Someone could type another supporter's name, which just adds to that name's total.
 
 ## 5. Not covered
