@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="preloader.js"></script>
+<script src="data.js"></script>
 <title>The Startup Graveyard — Indian Startup Postmortems</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -526,21 +527,7 @@ function buildFoundersLookup(text){
 
 function loadFoundersData(){
   FOUNDERS_LOOKUP = buildFoundersLookup(FOUNDERS_FALLBACK_CSV);
-
-  if(!FOUNDERS_CSV_URL || FOUNDERS_CSV_URL.indexOf("PASTE_YOUR") === 0){
-    console.warn("Founders CSV not configured yet — founder pills will use the fallback snapshot only.");
-    return;
-  }
-
-  fetch(FOUNDERS_CSV_URL, { cache: "no-store" })
-    .then(res => { if(!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-    .then(text => {
-      if(!text || text.trim().length === 0) throw new Error("Empty response");
-      FOUNDERS_LOOKUP = buildFoundersLookup(text);
-    })
-    .catch(() => {
-      // Silent fail — fallback lookup is already in place.
-    });
+  GY_DB.founders().then(m => { FOUNDERS_LOOKUP = m; }).catch(()=>{});
 }
 
 let ALL = [];
@@ -573,6 +560,7 @@ function lifespanYears(row){
 // Rough parse of "$3.2M" / "₹8Cr" style strings into a comparable USD-ish number,
 // just for sorting/aggregating — not meant to be exact currency conversion.
 function parseFundingValue(v){
+  if(v && typeof v === 'object') return GY_DB.usd(v);
   const s = clean(v);
   if(!s) return 0;
   const num = parseFloat(s.replace(/[^0-9.]/g, ''));
@@ -891,12 +879,6 @@ document.getElementById('submitForm').addEventListener('submit', function(e){
     return;
   }
 
-  if(!SUBMISSION_APPS_SCRIPT_URL || SUBMISSION_APPS_SCRIPT_URL.indexOf("PASTE_YOUR") === 0){
-    statusEl.textContent = "Submissions aren't set up yet — please reach out to us directly instead.";
-    statusEl.className = 'form-status error';
-    return;
-  }
-
   const payload = {
     formType: "failedSuggestion",
     submitterName: form.submitterName.value.trim(),
@@ -917,25 +899,21 @@ document.getElementById('submitForm').addEventListener('submit', function(e){
   statusEl.textContent = '';
   statusEl.className = 'form-status';
 
-  fetch(SUBMISSION_APPS_SCRIPT_URL, {
+  fetch(GY_CFG.url + "/rest/v1/submissions", {
     method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "text/plain;charset=utf-8" } // avoids CORS preflight issues with Apps Script
+    body: JSON.stringify({ payload }),
+    headers: { "Content-Type": "application/json", apikey: GY_CFG.key, Authorization: "Bearer " + GY_CFG.key, Prefer: "return=minimal" }
   })
     .then(res => res.text().then(text => ({ status: res.status, ok: res.ok, text })))
     .then(({ status, ok, text }) => {
-      let data = null;
-      try { data = JSON.parse(text); } catch(_) { /* not JSON — handled below */ }
-
-      if(ok && data && data.ok){
+      if(ok){
         statusEl.textContent = "Thanks — your submission has been sent for review.";
         statusEl.className = 'form-status success';
         form.reset();
         setTimeout(closeSubmitModal, 1800);
       } else {
-        const reason = data && data.error ? data.error : `HTTP ${status}: ${text.slice(0, 200)}`;
-        console.error('Submission failed:', reason);
-        statusEl.textContent = "That didn't go through (" + reason + "). Please try again or email us directly.";
+        console.error('Submission failed:', status, text);
+        statusEl.textContent = "That didn't go through (HTTP " + status + "). Please try again or email us directly.";
         statusEl.className = 'form-status error';
       }
       btn.disabled = false;
@@ -1050,7 +1028,7 @@ function applyFilters(){
   if(sortBy === 'year-asc') list.sort((a,b)=> (parseInt(a['Founded In'])||0) - (parseInt(b['Founded In'])||0));
   if(sortBy === 'lifespan-asc') list.sort((a,b)=> (lifespanYears(a) ?? 999) - (lifespanYears(b) ?? 999));
   if(sortBy === 'lifespan-desc') list.sort((a,b)=> (lifespanYears(b) ?? -1) - (lifespanYears(a) ?? -1));
-  if(sortBy === 'funding-desc') list.sort((a,b)=> parseFundingValue(b['Funding Amount']) - parseFundingValue(a['Funding Amount']));
+  if(sortBy === 'funding-desc') list.sort((a,b)=> parseFundingValue(b) - parseFundingValue(a));
 
   render(list);
 
@@ -1102,7 +1080,7 @@ function buildTicker(data){
 }
 
 function buildStats(data){
-  const totalRaised = data.reduce((sum, r) => sum + parseFundingValue(r['Funding Amount']), 0);
+  const totalRaised = data.reduce((sum, r) => sum + GY_DB.usd(r), 0);
   const lifespans = data.map(lifespanYears).filter(v => v !== null);
   const avgLife = lifespans.length ? (lifespans.reduce((a,b)=>a+b,0) / lifespans.length) : null;
   const reasonCounts = {};
@@ -1113,24 +1091,25 @@ function buildStats(data){
   const topReason = Object.entries(reasonCounts).sort((a,b)=> b[1]-a[1])[0];
 
   function fmtMoney(n){
-    if(n >= 1000000) return `$${(n/1000000).toFixed(1)}M`;
+    if(n >= 1000000000) return `$${(n/1000000000).toFixed(2)}B`;
+    if(n >= 1000000) return `$${Math.round(n/1000000).toLocaleString('en-US')}M`;
     if(n >= 1000) return `$${(n/1000).toFixed(0)}K`;
     return n ? `$${n}` : '—';
   }
 
   document.getElementById('statRow').innerHTML = `
     <div class="stat"><b>${data.length}</b><span>Startups tracked</span></div>
-    <div class="stat"><b>${fmtMoney(totalRaised)}</b><span>Capital burned</span></div>
+    <div class="stat"><b>${fmtMoney(totalRaised)}</b><span title="Sum of disclosed funding only, converted to USD">Capital burned</span></div>
     <div class="stat"><b>${avgLife !== null ? avgLife.toFixed(1) + ' yr' : '—'}</b><span>Avg. lifespan</span></div>
     <div class="stat"><b>${topReason ? E(topReason[0]) : '—'}</b><span>Top failure reason</span></div>
   `;
 }
 
 function parseCsvText(text, isSample){
-  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  const results = Array.isArray(text) ? { data: text } : Papa.parse(text, { header: true, skipEmptyLines: true });
   // A startup is shown ONLY when its Visible cell is exactly "Yes". Blank, "No" or anything else = hidden.
   // (The built-in sample rows used when the Sheet can't be reached are exempt.)
-  ALL = results.data.filter(r => clean(r['Startup Name']) && (isSample || /^yes$/i.test((r['Visible'] || '').trim())));
+  ALL = results.data.filter(r => clean(r['Startup Name']) && (isSample || Array.isArray(text) || /^yes$/i.test((r['Visible'] || '').trim())));
   // Accept either "Funding Stage" or "Funding stage" as the column header.
   ALL.forEach(r => { if(!r['Funding Stage'] && r['Funding stage']) r['Funding Stage'] = r['Funding stage']; });
   // Drop any compared startups that no longer exist after a live refresh.
@@ -1158,10 +1137,10 @@ function setSyncBadge(state){
   } else {
     el.textContent = '● SAMPLE DATA';
     el.style.color = 'var(--rust)';
-    el.title = "Could not reach your Google Sheet, so only the built-in sample startups are shown.";
+    el.title = "Could not reach the database, so only the built-in sample startups are shown.";
     if(!document.getElementById('syncNote') && state === 'failed'){
       const n = document.createElement('div'); n.id = 'syncNote'; n.className = 'sync-note'; n.setAttribute('role','status');
-      n.innerHTML = "<b>Couldn't load your Google Sheet.</b> Showing built-in sample startups instead. In Google Sheets choose File &rarr; Share &rarr; Publish to web, publish the <i>Failed Startups</i> tab as CSV, and make sure the link matches <code>CSV_URL</code> in this file.";
+      n.innerHTML = "<b>Couldn't reach the database.</b> Showing built-in sample startups for now. Please refresh in a moment.";
       document.querySelector('main').insertBefore(n, document.getElementById('grid'));
     }
   }
@@ -1256,24 +1235,14 @@ document.getElementById('openCompare').addEventListener('click', openCompareModa
 document.getElementById('compareOverlay').addEventListener('click', e=>{ if(e.target.id==='compareOverlay') closeCompareModal(); });
 
 function loadData(){
-  parseCsvText(FALLBACK_CSV, true);
+  const cached = GY_DB.cached();
+  if(cached.length){ parseCsvText(cached); } else { parseCsvText(FALLBACK_CSV, true); }
   setSyncBadge('loading');
-
-  if(!CSV_URL || CSV_URL.indexOf("PASTE_YOUR") === 0){
-    console.warn("CSV_URL not configured yet — showing the fallback snapshot only.");
-    return;
-  }
-
-  fetch(CSV_URL, { cache: "no-store" })
-    .then(res => { if(!res.ok) throw new Error(`HTTP ${res.status}`); return res.text(); })
-    .then(text => {
-      if(!text || text.trim().length === 0) throw new Error("Empty response");
-      parseCsvText(text);
-      setSyncBadge('live');
-    })
-    .catch((err) => {
-      console.warn('[graveyard] Failed Startups sheet did not load:', err && err.message);
-      setSyncBadge('failed');
+  GY_DB.startups()
+    .then(rows => { parseCsvText(rows); setSyncBadge('live'); })
+    .catch(err => {
+      console.warn('[graveyard] database did not load:', err && err.message);
+      setSyncBadge(cached.length ? 'live' : 'failed');
     });
 }
 

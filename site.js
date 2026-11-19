@@ -53,7 +53,7 @@ function md(t){const o=[];let ul=false;String(t||"").split(/\r?\n/).forEach(l=>{
 function drive(u){u=clean(u);if(!u)return"";const m=u.match(/\/d\/([\w-]+)/)||u.match(/id=([\w-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w600`:u}
 const initials=n=>String(n||"?").split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase();
 function loadJs(src){return new Promise(res=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=res;document.head.appendChild(s)})}
-function loadScript(src){return new Promise((res,rej)=>{if(window.Papa)return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function loadScript(src){return new Promise((res,rej)=>{if(window.Papa&&/papaparse/i.test(src))return res();const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 
 const STATUS=window.GY_STATUS={};
 function tab(name){
@@ -72,7 +72,7 @@ async function getSettings(){const d=await get("settings");const s=Object.assign
 // ====== shell ======
 function head(){
  const add=(tag,attrs)=>{const e=document.createElement(tag);Object.assign(e,attrs);document.head.appendChild(e)};
- window.GY_BUILD="6";if(!document.querySelector('link[href^="site.css"]'))add("link",{rel:"stylesheet",href:"site.css?v=6"});
+ window.GY_BUILD="7";if(!document.querySelector('link[href^="site.css"]'))add("link",{rel:"stylesheet",href:"site.css?v=6"});
  if(/^(home|support)$/.test(document.body.dataset.page||""))["gazette.css","support.css"].forEach(h=>add("link",{rel:"stylesheet",href:h+"?v=5"}));
  add("link",{rel:"icon",type:"image/png",sizes:"48x48",href:"favicon-48.png"});
  add("link",{rel:"icon",type:"image/png",sizes:"32x32",href:"favicon-32.png"});
@@ -174,10 +174,8 @@ async function homePage(S,P,H){
 }
 async function homeData(){
  let rows=[];
- try{await loadScript("https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js");
-  const t=await fetch(`${SHEET}?gid=${GIDS.graveyard}&single=true&output=csv`,{cache:"no-store"}).then(r=>r.text());
-  rows=Papa.parse(t,{header:true,skipEmptyLines:true}).data.filter(r=>clean(r["Startup Name"])&&visStartup(r));STATUS.graveyard="live ("+rows.length+" rows)";try{localStorage.setItem("gy_rows",JSON.stringify(rows))}catch(e){}}
- catch(e){try{rows=(JSON.parse(localStorage.getItem("gy_rows"))||[]).filter(visStartup)}catch(x){rows=[]}STATUS.graveyard="FAILED to load: is the Failed Startups tab published to the web?"+(rows.length?" Using last saved copy":"");console.warn("[graveyard] "+STATUS.graveyard)}
+ try{await loadScript("data.js");rows=await GY_DB.startups();STATUS.graveyard="live ("+rows.length+" rows, database)"}
+ catch(e){try{rows=window.GY_DB?GY_DB.cached():[]}catch(x){rows=[]}STATUS.graveyard="FAILED to load from database"+(rows.length?". Using last saved copy":"");console.warn("[graveyard] "+STATUS.graveyard)}
  const life=r=>{const a=parseInt(r["Founded In"]),b=parseInt(r["Shutdown Year"]);return a&&b&&b>=a?b-a:null};
  document.querySelectorAll("#ulStats b[data-v^='auto:']").forEach(b=>{const k=b.dataset.v;
   if(k==="auto:startups"){b.dataset.v=rows.length?String(rows.length):"—";b.textContent=b.dataset.v}
