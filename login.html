@@ -146,8 +146,9 @@ $("#lf").addEventListener("submit",async e=>{e.preventDefault();$("#lerr").textC
   $("#lbtn").disabled=false;if(error){$("#lerr").textContent="Sign-in failed.";return}
   await enter(data.user)});
 async function enter(u){
-  const{data,error}=await sb.from("admins").select("user_id").eq("user_id",u.id);
-  if(error||!data||!data.length){await sb.auth.signOut();$("#lerr").textContent="This account is not an admin.";return}
+  const r=await sb.rpc("is_admin");
+  if(r.error){await sb.auth.signOut();$("#lerr").textContent="Database check failed: "+r.error.message+" (run supabase/patch-02.sql)";return}
+  if(r.data!==true){await sb.auth.signOut();$("#lerr").textContent="This account is not an admin.";return}
   user=u;$("#login").classList.add("hide");$("#app").classList.remove("hide");$("#who").textContent=u.email;
   await loadAll();go(location.hash.slice(1)||"overview");
 }
