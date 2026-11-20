@@ -150,7 +150,7 @@ async function enter(u){
   if(r.error){await sb.auth.signOut();$("#lerr").textContent="Database check failed: "+r.error.message+" (run supabase/patch-02.sql)";return}
   if(r.data!==true){await sb.auth.signOut();$("#lerr").textContent="This account is not an admin.";return}
   user=u;$("#login").classList.add("hide");$("#app").classList.remove("hide");$("#who").textContent=u.email;
-  await loadAll();go(location.hash.slice(1)||"overview");
+  await loadAll();loadMiss().catch(()=>{});go(location.hash.slice(1)||"overview");
 }
 $("#out").onclick=async()=>{await sb.auth.signOut();location.reload()};
 sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&user)location.reload()});
@@ -162,11 +162,75 @@ async function loadAll(){
 }
 const cnt=st=>S.filter(r=>r.status===st).length;
 function drawTabs(){
-  const T=[["overview","Overview"],["startups","Startups",cnt("published")],["review","Review",cnt("pending")],["leads","Leads",cnt("lead")],["import","AI import"],["subs","Submissions",SUBS.filter(x=>!x.reviewed).length],["supporters","Supporters"],["backup","Backup"]];
+  const T=[["overview","Overview"],["startups","Startups",cnt("published")],["review","Review",cnt("pending")],["leads","Leads",cnt("lead")],["import","AI import"],["subs","Submissions",SUBS.filter(x=>!x.reviewed).length],["supporters","Supporters"],["missed","Missed searches",MISSN],["settings","Settings"],["nav","Navigation"],["pages","Pages"],["team","Team"],["highlights","Highlights"],["backup","Backup"]];
   $("#tabs").innerHTML=T.map(([k,l,n])=>`<button data-k="${k}" class="${view===k?"on":""}">${l}${n?`<span class="n">${n}</span>`:""}</button>`).join("");
   $("#tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.k));
 }
-function go(k){if(k!==view)flt.q="";view=k;location.hash=k;drawTabs();({overview,startups:()=>list("published"),review:()=>list("pending"),leads:()=>list("lead"),import:importView,subs:subsView,supporters:supView,backup:backupView}[k]||overview)()}
+function go(k){if(k!==view)flt.q="";view=k;location.hash=k;drawTabs();({overview,startups:()=>list("published"),review:()=>list("pending"),leads:()=>list("lead"),import:importView,subs:subsView,supporters:supView,backup:backupView,missed:missView,settings:settingsView,nav:navView,pages:pagesView,team:teamView,highlights:highView}[k]||overview)()}
+
+
+// ================= SITE EDITOR TABS (Phase C) =================
+let MISSN=0;
+function drive(u){const m=/\/d\/([\w-]+)/.exec(u||"")||/[?&]id=([\w-]+)/.exec(u||"");return m?"https://drive.google.com/thumbnail?id="+m[1]+"&sz=w300":(u||"")}
+const SGROUPS={"Hero & home":["site_name","tagline","hero_eyebrow","hero_title","hero_accent","hero_subtext","cta1_label","cta1_url","cta2_label","cta2_url"],
+ "Page titles":["about_title","about_intro","team_title","team_intro","contact_title","contact_intro","terms_title","terms_intro","privacy_title","privacy_intro","legal_updated"],
+ "Contact":["contact_email","contact_phone","address","contact_form_url"],"Social":["linkedin","twitter","instagram","youtube","facebook"],
+ "Brand & footer":["logo_url","footer_blurb","copyright"]};
+async function settingsView(){
+  const{data,error}=await sb.from("site_settings").select("key,value");if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql and seed-site.sql)</span></div>';
+  const m=Object.fromEntries(data.map(r=>[r.key,r.value]));const known=new Set(Object.values(SGROUPS).flat());
+  const extra=Object.keys(m).filter(k=>!known.has(k));const G={...SGROUPS};if(extra.length)G["Other"]=extra;
+  $("#view").innerHTML=Object.entries(G).map(([g,ks])=>`<h3 style="margin:18px 0 8px">${g}</h3><div class="card"><div class="fg">${ks.map(k=>{const v=m[k]||"";const big=v.length>70||k==="address";return`<div class="${big?"wide":""}"><label>${k}</label>${big?`<textarea data-sk="${k}">${esc(v)}</textarea>`:`<input data-sk="${k}" value="${esc(v)}">`}</div>`}).join("")}</div></div>`).join("")
+   +`<div class="row" style="margin-top:14px"><button class="btn rust" id="svS">Save all settings</button><button class="btn ghost" id="addK">+ New key</button></div>`;
+  $("#svS").onclick=async()=>{const rows=[...document.querySelectorAll("[data-sk]")].map(e=>({key:e.dataset.sk,value:e.value,updated_at:new Date().toISOString()}));
+    const{error}=await sb.from("site_settings").upsert(rows);toast(error?error.message:"Settings saved",!!error)};
+  $("#addK").onclick=async()=>{const k=prompt("New setting key (letters, numbers, underscore):");if(!k||!/^\w+$/.test(k))return;await sb.from("site_settings").upsert({key:k,value:""});settingsView()};
+}
+function listView({table,title,fields,defaults,groupBy,hint}){
+  return async()=>{
+    let q=sb.from(table).select("*");if(groupBy)q=q.order(groupBy);const{data,error}=await q.order("sort_order");
+    if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+'</div>';
+    const cell=(r,f)=>f.t==="bool"?`<input type="checkbox" data-f="${f.k}" ${r[f.k]?"checked":""} style="width:auto">`
+      :f.t==="sel"?`<select data-f="${f.k}">${f.o.map(o=>`<option ${r[f.k]===o?"selected":""}>${o}</option>`).join("")}</select>`
+      :f.t==="area"?`<textarea data-f="${f.k}">${esc(r[f.k])}</textarea>`:`<input data-f="${f.k}" ${f.t==="num"?'type="number"':""} value="${esc(r[f.k])}">`;
+    $("#view").innerHTML=`<div class="row"><h3 class="grow" style="margin:0">${title}</h3><button class="btn rust" id="nw">+ Add</button></div>${hint?`<p class="muted small">${hint}</p>`:""}`
+     +data.map(r=>`<div class="card" data-id="${r.id}" style="margin-bottom:12px"><div class="fg">${fields.map(f=>`<div class="${f.w?"wide":""}"><label>${f.l||f.k}</label>${cell(r,f)}</div>`).join("")}</div>
+      ${table==="site_team"&&r.photo_url?`<p><img src="${esc(drive(r.photo_url))}" style="width:56px;height:56px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'"></p>`:""}
+      <div class="row" style="margin:12px 0 0"><button class="btn sm sv">Save</button><button class="btn sm danger dl">Delete</button></div></div>`).join("");
+    $("#nw").onclick=async()=>{const{error}=await sb.from(table).insert(defaults);toast(error?error.message:"Added",!!error);if(!error)go(view)};
+    document.querySelectorAll(".card[data-id]").forEach(c=>{
+      c.querySelector(".sv").onclick=async()=>{const row={};c.querySelectorAll("[data-f]").forEach(e=>{row[e.dataset.f]=e.type==="checkbox"?e.checked:e.type==="number"?+e.value:e.value});
+        const{error}=await sb.from(table).update(row).eq("id",c.dataset.id);toast(error?error.message:"Saved",!!error)};
+      c.querySelector(".dl").onclick=async()=>{if(!confirm("Delete this row?"))return;const{error}=await sb.from(table).delete().eq("id",c.dataset.id);toast(error?error.message:"Deleted",!!error);if(!error)go(view)};
+    });
+  }}
+const navView=listView({table:"site_nav",title:"Navigation links",defaults:{label:"New link",url:"#",location:"both",sort_order:99,visible:true},
+  fields:[{k:"label"},{k:"url"},{k:"location",t:"sel",o:["header","footer","both"]},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+const pagesView=listView({table:"site_pages",title:"Page sections",groupBy:"page",defaults:{page:"home",heading:"New section",body:"",sort_order:99,visible:true},
+  hint:'Page = home, about, terms, privacy. Body supports **bold** and "- " bullet lines.',
+  fields:[{k:"page"},{k:"sort_order",l:"order",t:"num"},{k:"heading"},{k:"link"},{k:"visible",t:"bool"},{k:"body",t:"area",w:1}]});
+const teamView=listView({table:"site_team",title:"Team members",defaults:{name:"New member",role:"",sort_order:99,visible:true},
+  fields:[{k:"name"},{k:"role"},{k:"sort_order",l:"order",t:"num"},{k:"photo_url",l:"photo url (Drive links work)"},{k:"linkedin"},{k:"visible",t:"bool"},{k:"bio",t:"area",w:1}]});
+const highView=listView({table:"site_highlights",title:"Highlights",defaults:{value:"0",label:"New highlight",sort_order:99,visible:true},
+  hint:'Value can be text ("Hourly") or a number.',fields:[{k:"value"},{k:"label"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+async function missView(){
+  const{data,error}=await sb.from("search_misses").select("*").order("hits",{ascending:false}).order("last_seen",{ascending:false}).limit(500);
+  if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql)</span></div>';
+  const fmt=d=>new Date(d).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  $("#view").innerHTML=`<div class="row"><h3 class="grow" style="margin:0">Searches that found nothing</h3><select id="mf" style="width:auto"><option value="new">New</option><option value="all">All</option><option value="added">Added</option><option value="ignored">Ignored</option></select><button class="btn ghost sm" id="mcsv">Export CSV</button></div>
+   <p class="muted small">Each term is counted once per visitor visit. No names or IPs are stored. Mark "added" after you list a matching startup.</p>
+   <div class="tw"><table><thead><tr><th>Search</th><th>Times</th><th>Last</th><th>Status</th><th></th></tr></thead><tbody id="mb"></tbody></table></div>`;
+  const draw=()=>{const f=$("#mf").value;const rows=data.filter(r=>f==="all"||r.status===f);
+    $("#mb").innerHTML=rows.map(r=>`<tr data-t="${esc(r.term)}"><td class="nm">${esc(r.term)}</td><td>${r.hits}</td><td class="muted">${fmt(r.last_seen)}</td><td><span class="pill">${r.status}</span></td>
+      <td style="white-space:nowrap"><button class="btn ghost sm" data-s="added">Added</button> <button class="btn ghost sm" data-s="ignored">Ignore</button> <button class="btn danger sm" data-s="del">✕</button></td></tr>`).join("")||'<tr><td colspan="5" class="muted">Nothing here.</td></tr>';
+    $("#mb").querySelectorAll("button").forEach(b=>b.onclick=async()=>{const t=b.closest("tr").dataset.t;
+      const{error}=b.dataset.s==="del"?await sb.from("search_misses").delete().eq("term",t):await sb.from("search_misses").update({status:b.dataset.s}).eq("term",t);
+      if(error)return toast(error.message,1);await loadMiss();missView()})};
+  $("#mf").onchange=draw;draw();
+  $("#mcsv").onclick=()=>{const l=["term,hits,first_seen,last_seen,status",...data.map(r=>[JSON.stringify(r.term),r.hits,r.first_seen,r.last_seen,r.status].join(","))].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([l],{type:"text/csv"}));a.download="missed-searches.csv";a.click()};
+}
+async function loadMiss(){const r=await sb.from("search_misses").select("term",{count:"exact",head:true}).eq("status","new");MISSN=r.count||0;drawTabs()}
 
 // ---------- overview ----------
 function overview(){
