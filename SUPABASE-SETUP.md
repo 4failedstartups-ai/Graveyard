@@ -1,3 +1,5 @@
+> **Console switched off.** `/login` no longer exists; its files are in `console-archive/`. Steps 4-7 (admin user, login page) are only needed if you turn the console back on. The Google Sheet is the control panel now: `sheet-control/SETUP.md`.
+
 # Supabase setup (do these in order)
 
 Your project: `https://uveospgmehgarerlquav.supabase.co` (already wired into `data.js` and `login.html`).

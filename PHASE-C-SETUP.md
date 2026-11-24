@@ -1,3 +1,5 @@
+> **Console switched off.** The `/login` console described below is archived in `console-archive/` and the Google Sheet is the control panel now (`sheet-control/SETUP.md`). Everything below is kept for reference and for turning the console back on.
+
 # Update: Failed Startups name, logo, search, console-controlled site text
 
 ## 1. Supabase (SQL Editor, in this order)

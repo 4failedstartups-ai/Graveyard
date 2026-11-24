@@ -1,3 +1,5 @@
+> **Out of date.** This describes the old "publish the Sheet to web" method. The site no longer reads the published Sheet. Use `sheet-control/SETUP.md`.
+
 # Connect your Google Sheet (fixes "no information is getting fetched")
 
 ## Why the site shows placeholders
