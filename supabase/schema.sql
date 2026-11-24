@@ -1,5 +1,5 @@
 -- =====================================================================
--- The Startup Graveyard: Supabase schema
+-- Failed Startups: Supabase schema
 -- Paste this whole file into Supabase > SQL Editor > New query > Run.
 -- Safe to run once on a fresh project.
 -- =====================================================================
