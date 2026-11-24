@@ -1,52 +1,32 @@
-# Phase C setup: site editor + missed-search log
+# Update: Failed Startups name, logo, search, console-controlled site text
 
-What you get: editable Settings, Nav, Pages, Team and Highlights in a hidden admin page, plus a list of searches that found nothing (like "pet toys").
-Time needed: about 10 minutes. Do the steps in order.
+## 1. Supabase (SQL Editor, in this order)
 
----
+1. Paste `supabase/phaseC.sql` and Run. Safe to run again.
+2. Paste `supabase/seed-site.sql` and Run.
+   **This replaces** Settings, Navigation, Pages, Team and Highlights with the real defaults (Failed Startups text, the default home numbers, new Terms and Privacy). The dummy values from the Useful Startups sheet are removed. Run it once, then edit in the console. Running it again resets those tabs to the defaults.
 
-## Step 1. Run the SQL in Supabase
+Check in Table Editor: `site_settings` about 40 rows, `site_nav` 9, `site_pages` 33, `site_team` 3, `site_highlights` 3.
 
-Supabase → **SQL Editor → New query**.
+## 2. GitHub
 
-1. Paste the contents of `supabase/phaseC.sql` → **Run**. It should say "Success".
-2. New query → paste `supabase/seed-site.sql` → **Run**. It is safe to run again: it only fills empty tables.
+Replace every file in the repo with the files from this zip (keep the `.git` folder). Then wait for the deploy and hard refresh (Ctrl+Shift+R). The loading screen and icons are cached, so on a phone you may need to clear the site data once.
 
-Both files are already in your repo's `supabase/` folder.
+## 3. How editing works now
 
-Check it worked: **Table Editor** should now show `site_settings`, `site_nav`, `site_pages`, `site_team`, `site_highlights` and `search_misses`. `site_settings` should have about 33 rows.
+Open `https://YOUR-SITE/login`, sign in, and use the tabs **Settings, Navigation, Pages, Team, Highlights**. Save, then reload any page of the site: the change is there. If the database cannot be reached, the site shows the last copy saved in the visitor's browser, then the built-in defaults.
 
-If step 1 fails with an error mentioning `is_admin`, tell me the exact error text.
+Highlights: `auto:startups` is the live startup count and `auto:avglife` the live average lifespan. Keep those if you want the numbers to update on their own.
 
----
+## 4. What to check after deploying
 
-## Step 2. The editor page is already in the repo
+- Home page: the search box under the headline. Try a startup name, a sector (`fintech`), a page (`terms`) and nonsense (`pet toys`).
+- Graveyard page: the search box is at the top. `graveyard.html?q=fintech` opens with it filled in.
+- The dark announcement bar at the top shows its text on both pages.
+- Console, Missed searches tab: `pet toys` appears after a search that finds nothing.
 
-`site-console.html` is included with your key already filled in. Open `https://YOUR-SITE/site-console.html` and sign in with your admin email and password. Rename the file if you want a less guessable address. Do not link to it from any page.
+## 5. Things to review
 
-Tabs: Settings, Navigation, Pages, Team, Highlights, Missed searches.
-
----
-
-## Step 3. Missed searches (already done in this version)
-
-`graveyard.html` now sends searches that find nothing to Supabase instead of the old Google Apps Script. Nothing to edit.
-
----
-
-## Step 4. Test it (2 minutes)
-
-1. Open the Graveyard page and search for something you know does not exist, such as `pet toys`. Wait 2 seconds.
-2. Open the editor → **Missed searches**. "pet toys" should appear with a count of 1.
-3. Edit any Settings value in the editor and click **Save all settings**. It should say "Settings saved".
-
-If step 2 shows nothing: open the browser console on the Graveyard page (F12 → Network) and look for a failed request to `log_search_miss`. Send me the status code.
-
----
-
-## Notes
-
-- The public site does not read Settings, Nav, Pages, Team or Highlights from Supabase yet. It still reads them from the Google Sheet. Editing them in the editor will not change the live site until the next step, where I switch the site over. Until then, keep editing the Sheet for those.
-- Missed searches are the only part that is live right away.
-- Missed searches store only the search text and a count. No names, IPs or accounts.
-- Team photo and logo links are Google Drive "view" links. The editor previews them, but the public site may need the direct form later.
+- Settings, Contact: email, phone and address were taken from your Graveyard Settings tab. Social links are blank (the ones in the sheet were Useful Startups accounts). Add yours in the console.
+- Terms and Privacy are a careful first draft written for this site. Terms use `team.oaksprouts@gmail.com` for corrections and privacy requests; change it in Pages if you prefer another inbox. Have a lawyer review both before relying on them.
+- File names such as `graveyard.html` and the repo name are unchanged on purpose, so no links break.

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="preloader.js"></script>
 <script src="data.js"></script>
-<title>The Startup Graveyard — Indian Startup Postmortems</title>
+<title>Failed Startups — Indian Startup Postmortems</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -103,6 +103,27 @@
     font-size: 26px; color: var(--ink);
   }
   .stat span{ font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ---------- Search (top of page) ---------- */
+  .hero-search{
+    position: relative; display: flex; align-items: center;
+    max-width: 640px; margin-top: 26px;
+  }
+  .hero-search svg{
+    position: absolute; left: 16px; width: 19px; height: 19px; pointer-events: none;
+    fill: none; stroke: var(--ink-dim); stroke-width: 2; stroke-linecap: round;
+  }
+  .hero-search input[type="text"]{
+    width: 100%; font-size: 16px; padding: 15px 46px 15px 46px;
+    background: #F4EFE3; border: 1.5px solid var(--ink); border-radius: 4px;
+    box-shadow: 4px 4px 0 rgba(34,30,26,.12);
+  }
+  .hero-search input[type="text"]:focus{ border-color: var(--rust); box-shadow: 4px 4px 0 rgba(140,59,46,.22); }
+  .hero-search button{
+    position: absolute; right: 8px; width: 30px; height: 30px; border: 0; border-radius: 50%;
+    background: transparent; color: var(--ink-dim); font-size: 22px; line-height: 1; cursor: pointer;
+  }
+  .hero-search button:hover{ background: rgba(34,30,26,.08); color: var(--ink); }
 
   /* ---------- Controls ---------- */
   .controls{
@@ -364,14 +385,18 @@
 
 <header>
   <div class="eyebrow">Vol. 01 — Postmortems</div>
-  <h1>The Startup <em>Graveyard</em></h1>
+  <h1>Failed <em>Startups</em></h1>
   <p class="sub">A record of the startups that didn't make it — what they raised, how long they lasted, and why they folded. The point isn't the failure, it's the pattern underneath it.</p>
+  <form class="hero-search" id="heroSearch" role="search" onsubmit="return false">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input type="text" id="search" placeholder="Search failed startups by name, founder, investor, sector or reason…" autocomplete="off" aria-label="Search failed startups">
+    <button type="button" id="searchClear" aria-label="Clear search" hidden>&times;</button>
+  </form>
   <div class="stat-row" id="statRow"></div>
   <button class="suggest-btn" onclick="openSubmitModal()">+ Submit a postmortem</button>
 </header>
 
 <div class="controls">
-  <input type="text" id="search" placeholder="Search by name, founder, or investor…">
   <select id="sectorFilter"><option value="">All sectors</option></select>
   <select id="reasonFilter"><option value="">All failure reasons</option></select>
   <select id="techFilter"><option value="">All underlying tech</option></select>
@@ -1008,14 +1033,15 @@ function openFounderPopup(name){
 }
 
 function applyFilters(){
-  const q = document.getElementById('search').value.toLowerCase();
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const clr = document.getElementById('searchClear'); if(clr) clr.hidden = !q;
   const sector = document.getElementById('sectorFilter').value;
   const reasonVal = document.getElementById('reasonFilter').value;
   const techVal = document.getElementById('techFilter').value;
   const sortBy = document.getElementById('sortBy').value;
 
   let list = ALL.filter(row=>{
-    const hay = `${row['Startup Name']} ${row['Founders']} ${row['Key Investors']} ${row['Tagline / Description']} ${row['Tags']} ${row['Underlying Tech']}`.toLowerCase();
+    const hay = `${row['Startup Name']} ${row['Founders']} ${row['Key Investors']} ${row['Tagline / Description']} ${row['Tags']} ${row['Underlying Tech']} ${row['Sector']} ${row['Failure Reason']} ${row['Headquarters']}`.toLowerCase();
     if(q && !hay.includes(q)) return false;
     if(sector && row['Sector'] !== sector) return false;
     if(reasonVal && clean(row['Failure Reason']) !== reasonVal) return false;
@@ -1269,10 +1295,16 @@ function logMissedSearch(term){
   }).catch(function(){});
 }
 
-loadData();
 loadFoundersData();
 
 document.getElementById('search').addEventListener('input', applyFilters);
+document.getElementById('searchClear').addEventListener('click', ()=>{ const i = document.getElementById('search'); i.value=''; applyFilters(); i.focus(); });
+document.addEventListener('keydown', e=>{
+  if(e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName||'')){ e.preventDefault(); document.getElementById('search').focus(); }
+});
+// Arriving from the home-page search: graveyard.html?q=fintech pre-fills the box.
+(function(){ try{ const q = new URLSearchParams(location.search).get('q'); if(q){ const i = document.getElementById('search'); i.value = q.slice(0,80); document.getElementById('searchClear').hidden = false; } }catch(_){} })();
+loadData();
 document.getElementById('sectorFilter').addEventListener('change', applyFilters);
 document.getElementById('reasonFilter').addEventListener('change', applyFilters);
 document.getElementById('techFilter').addEventListener('change', applyFilters);

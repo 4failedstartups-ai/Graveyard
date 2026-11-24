@@ -1,4 +1,4 @@
-/* The Gazette: obituary-style home sections for the Graveyard.
+/* The Gazette: obituary-style home sections for Failed Startups.
    Called by site.js:  GZ.home(rows, settings, root)   (rows = visible Failed Startups rows) */
 (function(){
 "use strict";
@@ -40,7 +40,7 @@ function home(rows,S,root){
   const html=rows&&rows.length?front(rows)+autopsy(rows)+wall(rows)+where():"";
   const box=document.createElement("div");box.id="gzRoot";box.innerHTML=html;
   (sec&&sec.parentNode?sec.parentNode:wrap.parentNode).insertBefore(box,sec||wrap);
-  const us=document.createElement("section");us.className="ul-sec";us.innerHTML=`<div class="ul-wrap"><a class="gz-us rv" href="https://usefulstartups.com/" target="_blank" rel="noopener"><div><div class="ul-eyebrow">The other side of the story</div><h2>Want to see startups that actually work?</h2><p class="ul-lead">The graveyard shows what went wrong. Useful Startups is the opposite: a ledger of Indian startups that are alive, useful and growing.</p></div><span class="gz-us-cta">Explore Useful Startups <i>→</i></span></a></div>`;
+  const us=document.createElement("section");us.className="ul-sec";us.innerHTML=`<div class="ul-wrap"><a class="gz-us rv" href="https://usefulstartups.com/" target="_blank" rel="noopener"><div><div class="ul-eyebrow">The other side of the story</div><h2>Want to see startups that actually work?</h2><p class="ul-lead">Failed Startups shows what went wrong. Useful Startups is the opposite: a ledger of Indian startups that are alive, useful and growing.</p></div><span class="gz-us-cta">Explore Useful Startups <i>→</i></span></a></div>`;
   wrap.parentNode.insertBefore(us,wrap);
   const sup=document.createElement("section");sup.className="ul-sec gz-supsec";sup.id="support";
   sup.innerHTML=`<div class="ul-wrap"><div id="gzSupport"></div></div>`;wrap.parentNode.insertBefore(sup,wrap);
@@ -52,7 +52,7 @@ function home(rows,S,root){
 function front(rows){
   const d=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   return `<section class="ul-sec gz-front"><div class="ul-wrap">
-  <div class="gz-dateline rv"><span>The Graveyard Gazette</span><i></i><span>${esc(d)}</span><i></i><span>${rows.length} laid to rest</span></div>
+  <div class="gz-dateline rv"><span>The Failed Startups Gazette</span><i></i><span>${esc(d)}</span><i></i><span>${rows.length} laid to rest</span></div>
   <div class="gz-cols">
    <article class="gz-obit rv" id="gzObit"></article>
    <div class="gz-toll rv"><div class="ul-eyebrow">Death toll by year</div><h2>When the lights went out</h2>
@@ -96,7 +96,7 @@ function wireFront(rows){
 /* 2 / autopsy: cause of death */
 function autopsy(rows){
   return `<section class="ul-sec gz-aut"><div class="ul-wrap"><div class="gz-head rv"><div><div class="ul-eyebrow">The autopsy</div><h2>What actually kills startups</h2>
-  <p class="ul-lead" style="margin-top:8px">Cause of death across every startup in the graveyard. Tap a cause to see the victims.</p></div></div>
+  <p class="ul-lead" style="margin-top:8px">Cause of death across every failed startup. Tap a cause to see the victims.</p></div></div>
   <div class="gz-causes rv" id="gzCauses"></div></div></section>`;
 }
 function wireAutopsy(rows){
@@ -128,7 +128,7 @@ function wireWall(rows){
 function where(){
   const dots=Array.from({length:60},(_,i)=>`<i style="--d:${(i*53%17)/10}s;--o:${.15+((i*29)%10)/14}"></i>`).join("");
   return `<section class="ul-sec"><div class="ul-wrap"><a class="gz-map rv" href="graveyard.html#heatmap"><div class="gz-dots" aria-hidden="true">${dots}</div>
-  <div><div class="ul-eyebrow">Geography of failure</div><h2>Where do Indian startups die?</h2><p class="ul-lead">State by state, city by city. Open the heat map and find out which ecosystems have the biggest graveyards.</p><span class="ul-more" style="display:inline-block;margin-top:18px;font:600 13px var(--mono);color:var(--gold)">Open the heat map →</span></div></a></div></section>`;
+  <div><div class="ul-eyebrow">Geography of failure</div><h2>Where do Indian startups die?</h2><p class="ul-lead">State by state, city by city. Open the heat map and find out which ecosystems have lost the most startups.</p><span class="ul-more" style="display:inline-block;margin-top:18px;font:600 13px var(--mono);color:var(--gold)">Open the heat map →</span></div></a></div></section>`;
 }
 
 /* ---------- shared fx ---------- */

@@ -66,7 +66,7 @@ ol.how{padding-left:18px;margin:6px 0}ol.how li{margin:4px 0}
 </section>
 
 <div id="app" class="hide">
-  <header class="top"><h1>The Startup Graveyard · Console</h1><span class="sp"></span><span class="muted small" id="who"></span><a class="btn ghost sm" href="graveyard.html" target="_blank" rel="noopener">View site ↗</a><button class="btn ghost sm" id="out">Sign out</button></header>
+  <header class="top"><h1>Failed Startups · Console</h1><span class="sp"></span><span class="muted small" id="who"></span><a class="btn ghost sm" href="graveyard.html" target="_blank" rel="noopener">View site ↗</a><button class="btn ghost sm" id="out">Sign out</button></header>
   <nav class="tabs" id="tabs"></nav>
   <main id="view"></main>
 </div>
@@ -174,14 +174,14 @@ let MISSN=0;
 function drive(u){const m=/\/d\/([\w-]+)/.exec(u||"")||/[?&]id=([\w-]+)/.exec(u||"");return m?"https://drive.google.com/thumbnail?id="+m[1]+"&sz=w300":(u||"")}
 const SGROUPS={"Hero & home":["site_name","tagline","hero_eyebrow","hero_title","hero_accent","hero_subtext","cta1_label","cta1_url","cta2_label","cta2_url"],
  "Page titles":["about_title","about_intro","team_title","team_intro","contact_title","contact_intro","terms_title","terms_intro","privacy_title","privacy_intro","legal_updated"],
- "Contact":["contact_email","contact_phone","address","contact_form_url"],"Social":["linkedin","twitter","instagram","youtube","facebook"],
+ "Contact":["contact_email","contact_phone","address","contact_form_url"],"Social":["linkedin","twitter","instagram","facebook","youtube","discord","blog","whatsapp"],"Buy me a beer":["support_title","support_intro","support_api_url","support_message"],
  "Brand & footer":["logo_url","footer_blurb","copyright"]};
 async function settingsView(){
   const{data,error}=await sb.from("site_settings").select("key,value");if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql and seed-site.sql)</span></div>';
   const m=Object.fromEntries(data.map(r=>[r.key,r.value]));const known=new Set(Object.values(SGROUPS).flat());
   const extra=Object.keys(m).filter(k=>!known.has(k));const G={...SGROUPS};if(extra.length)G["Other"]=extra;
   $("#view").innerHTML=Object.entries(G).map(([g,ks])=>`<h3 style="margin:18px 0 8px">${g}</h3><div class="card"><div class="fg">${ks.map(k=>{const v=m[k]||"";const big=v.length>70||k==="address";return`<div class="${big?"wide":""}"><label>${k}</label>${big?`<textarea data-sk="${k}">${esc(v)}</textarea>`:`<input data-sk="${k}" value="${esc(v)}">`}</div>`}).join("")}</div></div>`).join("")
-   +`<div class="row" style="margin-top:14px"><button class="btn rust" id="svS">Save all settings</button><button class="btn ghost" id="addK">+ New key</button></div>`;
+   +`<p class="muted small">Changes appear on the live site the next time a page is opened. Clearing a box clears it on the site too.</p><div class="row" style="margin-top:14px"><button class="btn rust" id="svS">Save all settings</button><button class="btn ghost" id="addK">+ New key</button></div>`;
   $("#svS").onclick=async()=>{const rows=[...document.querySelectorAll("[data-sk]")].map(e=>({key:e.dataset.sk,value:e.value,updated_at:new Date().toISOString()}));
     const{error}=await sb.from("site_settings").upsert(rows);toast(error?error.message:"Settings saved",!!error)};
   $("#addK").onclick=async()=>{const k=prompt("New setting key (letters, numbers, underscore):");if(!k||!/^\w+$/.test(k))return;await sb.from("site_settings").upsert({key:k,value:""});settingsView()};
@@ -204,15 +204,16 @@ function listView({table,title,fields,defaults,groupBy,hint}){
       c.querySelector(".dl").onclick=async()=>{if(!confirm("Delete this row?"))return;const{error}=await sb.from(table).delete().eq("id",c.dataset.id);toast(error?error.message:"Deleted",!!error);if(!error)go(view)};
     });
   }}
-const navView=listView({table:"site_nav",title:"Navigation links",defaults:{label:"New link",url:"#",location:"both",sort_order:99,visible:true},
-  fields:[{k:"label"},{k:"url"},{k:"location",t:"sel",o:["header","footer","both"]},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+const navView=listView({table:"site_nav",title:"Navigation links",defaults:{label:"New link",url:"#",location:"both",grp:"Company",sort_order:99,visible:true},
+  hint:"Group is the footer column heading (for example Company or Resources). Order decides the position.",
+  fields:[{k:"label"},{k:"url"},{k:"location",t:"sel",o:["header","footer","both"]},{k:"grp",l:"group (footer column)"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
 const pagesView=listView({table:"site_pages",title:"Page sections",groupBy:"page",defaults:{page:"home",heading:"New section",body:"",sort_order:99,visible:true},
   hint:'Page = home, about, terms, privacy. Body supports **bold** and "- " bullet lines.',
   fields:[{k:"page"},{k:"sort_order",l:"order",t:"num"},{k:"heading"},{k:"link"},{k:"visible",t:"bool"},{k:"body",t:"area",w:1}]});
 const teamView=listView({table:"site_team",title:"Team members",defaults:{name:"New member",role:"",sort_order:99,visible:true},
   fields:[{k:"name"},{k:"role"},{k:"sort_order",l:"order",t:"num"},{k:"photo_url",l:"photo url (Drive links work)"},{k:"linkedin"},{k:"visible",t:"bool"},{k:"bio",t:"area",w:1}]});
 const highView=listView({table:"site_highlights",title:"Highlights",defaults:{value:"0",label:"New highlight",sort_order:99,visible:true},
-  hint:'Value can be text ("Hourly") or a number.',fields:[{k:"value"},{k:"label"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+  hint:'The numbers on the home page. Value can be text or a number. Use auto:startups for the live count of startups and auto:avglife for the live average lifespan.',fields:[{k:"value"},{k:"label"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
 async function missView(){
   const{data,error}=await sb.from("search_misses").select("*").order("hits",{ascending:false}).order("last_seen",{ascending:false}).limit(500);
   if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql)</span></div>';
@@ -365,9 +366,9 @@ async function importView(){
 Each item must follow this shape:
 ${SCHEMA}`;
    if(impMode==="new"){const n=$("#n").value||10,f=$("#focus").value.trim();
-    t=`Act as a careful researcher for "The Startup Graveyard", a site documenting failed Indian startups.\n\nFind ${n} failed startups${f?" focused on: "+f:""} that are NOT in this list already:\n${known}\n\n${rules}`}
+    t=`Act as a careful researcher for "Failed Startups", a site documenting failed Indian startups.\n\nFind ${n} failed startups${f?" focused on: "+f:""} that are NOT in this list already:\n${known}\n\n${rules}`}
    else{const p=[...document.querySelectorAll(".lp:checked")].map(c=>c.value).slice(0,10);if(!p.length)return toast("Tick at least one lead",1);
-    t=`Act as a careful researcher for "The Startup Graveyard", a site documenting failed Indian startups.\n\nFor each company below, check whether it has shut down. Return an entry ONLY for those that have actually shut down; skip the rest.\nCompanies: ${p.join(", ")}\n\n${rules}`}
+    t=`Act as a careful researcher for "Failed Startups", a site documenting failed Indian startups.\n\nFor each company below, check whether it has shut down. Return an entry ONLY for those that have actually shut down; skip the rest.\nCompanies: ${p.join(", ")}\n\n${rules}`}
    $("#pr").textContent=t;$("#pr").classList.remove("hide");$("#cp").classList.remove("hide")};
   $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText($("#pr").textContent);toast("Prompt copied")}catch(e){toast("Select and copy it manually",1)}};
   $("#parse").onclick=()=>check(age);
@@ -431,7 +432,7 @@ function backupView(){
   $("#view").innerHTML=`<h2>Backup & export</h2><div class="grid g2" style="margin-top:12px">
   <div class="card"><h3>Download everything</h3><p class="muted small">The free Supabase plan has no automatic backups. Download one now and then.</p><div class="row"><button class="btn" id="bj">Full backup (JSON)</button><button class="btn ghost" id="bc">Startups (CSV)</button></div></div>
   <div class="card"><h3>Restore / bulk add</h3><p class="muted small">Paste a JSON backup list to re-insert rows. Existing names are skipped.</p><textarea id="rs" placeholder="[ {...}, {...} ]"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost" id="rb">Restore</button></div></div></div>`;
-  $("#bj").onclick=()=>dl("graveyard-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({startups:S,submissions:SUBS},null,1),"application/json");
+  $("#bj").onclick=()=>dl("failed-startups-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({startups:S,submissions:SUBS},null,1),"application/json");
   $("#bc").onclick=()=>{const cols=F.map(f=>f[0]).concat(["status"]);const c=v=>`"${String(Array.isArray(v)?v.join(", "):v??"").replace(/"/g,'""')}"`;
     dl("startups-"+new Date().toISOString().slice(0,10)+".csv",[cols.join(",")].concat(S.map(r=>cols.map(k=>c(r[k])).join(","))).join("\n"),"text/csv")};
   $("#rb").onclick=async()=>{let a;try{a=JSON.parse($("#rs").value);a=a.startups||a}catch(e){return toast("Invalid JSON",1)}

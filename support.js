@@ -43,7 +43,7 @@ function mount(el,S){
   const demoSet=a=>{try{localStorage.setItem(DK,JSON.stringify(a))}catch(e){}};
 
   el.innerHTML=`<div class="bb" id="bbRoot">
-  <div class="bb-intro rv"><div class="ul-eyebrow">Support the graveyard</div><h2>Buy me a beer <span class="bb-emo">🍺</span></h2><p class="ul-lead">${esc(message)}</p></div>
+  <div class="bb-intro rv"><div class="ul-eyebrow">Support Failed Startups</div><h2>Buy me a beer <span class="bb-emo">🍺</span></h2><p class="ul-lead">${esc(message)}</p></div>
   <div class="bb-grid">
    <div class="bb-card rv">
     <div class="bb-stage"><div class="bb-glass" id="bbGlass">${glass()}</div><div class="bb-tag"><span id="bbIcon">🍺</span><b id="bbAmt">₹50</b><em id="bbLine"></em></div></div>
@@ -137,7 +137,7 @@ function mount(el,S){
       else{
         const o=await api({action:"order",amount:t.amt,name});if(!o.ok)throw new Error(o.error||"order");
         await loadRzp();
-        await new Promise((res,rej)=>{const z=new Razorpay({key:o.keyId,amount:o.amount,currency:"INR",order_id:o.orderId,name:(S&&S.site_name)||"The Startup Graveyard",description:t.title+" · "+inr(t.amt),theme:{color:"#8C3B2E"},
+        await new Promise((res,rej)=>{const z=new Razorpay({key:o.keyId,amount:o.amount,currency:"INR",order_id:o.orderId,name:(S&&S.site_name)||"Failed Startups",description:t.title+" · "+inr(t.amt),theme:{color:"#8C3B2E"},
           modal:{ondismiss:()=>rej(new Error("dismissed"))},
           handler:async r=>{try{say("Confirming your payment…","");const v=await api({action:"verify",orderId:r.razorpay_order_id,paymentId:r.razorpay_payment_id,signature:r.razorpay_signature});
             if(!v.ok)throw new Error(v.error||"verify");done(name,t);renderBoard(v.top||rows,name);res()}catch(er){rej(er)}}});

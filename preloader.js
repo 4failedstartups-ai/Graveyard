@@ -19,7 +19,7 @@
    +'@media(prefers-reduced-motion:reduce){#ulSplash *,#ulSplash::before{animation:none!important}}';
   var st=document.createElement('style'); st.textContent=css; (document.head||document.documentElement).appendChild(st);
   var d=document.createElement('div'); d.id='ulSplash'; d.setAttribute('role','status'); d.setAttribute('aria-label','Loading');
-  d.innerHTML='<div class="in"><img src="'+base+'gy-logo-full-light.png" alt="The Startup Graveyard"><div class="bar"><i></i></div></div>';
+  d.innerHTML='<div class="in"><img src="'+base+'gy-logo-full-light.png" alt="Failed Startups"><div class="bar"><i></i></div></div>';
   document.documentElement.appendChild(d);
   var html=document.documentElement; html.style.overflow='hidden';
   var t0=Date.now(),loaded=false,ready=false,done=false;

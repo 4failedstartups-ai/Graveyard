@@ -127,7 +127,7 @@ const st=document.createElement("style");st.textContent=css;document.head.append
 
 const sec=document.createElement("section");sec.className="hm";sec.id="heatmap";
 sec.innerHTML=`<div class="hm-head"><div><div class="eyebrow">Startup Heat Map</div><h2>Where India's failed startups were based</h2>
-<p>Every startup in the Graveyard, placed by its headquarters city. Tap a state to see its startups.</p></div>
+<p>Every failed startup, placed by its headquarters city. Tap a state to see its startups.</p></div>
 <button class="hm-toggle" id="hmToggle" type="button">Hide map</button></div>
 <div class="hm-body"><div class="hm-map" id="hmMap"></div><aside class="hm-side"><h3>Top states</h3><ol id="hmTop"></ol><h3>Top cities</h3><ol id="hmCities"></ol></aside></div>
 <div class="hm-foot"><div class="hm-legend">Fewer <i></i> More</div><div id="hmNote"></div></div>`;

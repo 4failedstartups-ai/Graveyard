@@ -1,5 +1,5 @@
 /**
- * Buy Me a Beer backend (Google Apps Script) for The Startup Graveyard.
+ * Buy Me a Beer backend (Google Apps Script) for Failed Startups.
  * Verifies every payment with Razorpay's API BEFORE it counts toward the leaderboard.
  *
  * SETUP (details in SUPPORT-SETUP.md)

@@ -1,6 +1,6 @@
 {
- "name": "The Startup Graveyard",
- "short_name": "Graveyard",
+ "name": "Failed Startups",
+ "short_name": "Failed Startups",
  "start_url": "/",
  "display": "standalone",
  "background_color": "#E8E1D3",
