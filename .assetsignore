@@ -1,0 +1,10 @@
+# Files Cloudflare should NOT publish on the website (they stay in GitHub).
+# Used by "wrangler deploy" static assets; harmless if your setup ignores it.
+.assetsignore
+.github/
+README.md
+docs/
+supabase/
+sheet-control/
+console-archive/
+tools/
