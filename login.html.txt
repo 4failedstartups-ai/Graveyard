@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Console</title>
+<link rel="icon" href="favicon-32.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--paper:#E8E1D3;--card:#F1ECE0;--ink:#221E1A;--dim:#6b645a;--rust:#8C3B2E;--line:#cfc6b4;--ok:#4d7a52;--warn:#b07a1f;--bad:#a23b2c}
+*{box-sizing:border-box}html{background:var(--paper)}
+body{margin:0;font:14px/1.5 "Space Grotesk",system-ui,sans-serif;color:var(--ink);background:var(--paper)}
+h1,h2,h3{font-family:Georgia,"Fraunces",serif;font-weight:500;margin:0}
+.mono,code,.k{font-family:"IBM Plex Mono",ui-monospace,monospace}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{width:100%;background:#fbf8f1;border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--rust);outline-offset:-1px}
+textarea{min-height:90px;resize:vertical}
+.btn{background:var(--ink);color:#f6f1e6;border:0;border-radius:6px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#000}.btn.rust{background:var(--rust)}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:4px 9px;font-size:12px}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.danger{background:var(--bad)}
+.hide{display:none!important}
+#login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.lbox{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:28px;box-shadow:6px 6px 0 #d6cdb9}
+.lbox h1{font-size:26px;margin-bottom:4px}.lbox p{color:var(--dim);margin:0 0 18px}
+.lbox label{display:block;margin:12px 0 4px;font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.err{color:var(--bad);min-height:20px;margin-top:10px;font-size:13px}
+header.top{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:20}
+header.top h1{font-size:20px;flex:0 0 auto}header.top .sp{flex:1}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;padding:0 12px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:53px;z-index:19}
+nav.tabs button{background:none;border:0;padding:11px 14px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;white-space:nowrap}
+nav.tabs button.on{color:var(--ink);border-color:var(--rust)}
+nav.tabs .n{font:11px "IBM Plex Mono",monospace;background:var(--ink);color:#fff;border-radius:9px;padding:1px 6px;margin-left:5px}
+main{padding:20px;max-width:1280px;margin:0 auto}
+.grid{display:grid;gap:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+.stat b{display:block;font:500 28px Georgia,serif}.stat span{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;font-size:13px}
+th{background:#e2dac9;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);position:sticky;top:0}
+tr:hover td{background:#f6f1e6}td.nm{font-weight:600}.tw{overflow:auto;max-height:68vh;border-radius:8px}
+.pill{display:inline-block;font:11px "IBM Plex Mono",monospace;padding:2px 8px;border-radius:10px;border:1px solid var(--line)}
+.pill.published{background:#dfeadb;color:var(--ok);border-color:#b7cfb2}.pill.pending{background:#f4e8cc;color:var(--warn);border-color:#e3cf9d}
+.pill.lead{background:#e5e0f0;color:#5a4a8a;border-color:#cbc2e3}.pill.hidden{background:#e8e2d7;color:var(--dim)}
+.pill.bad{background:#f3d9d3;color:var(--bad);border-color:#e3b5ab}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{border:1px solid var(--line);background:transparent;border-radius:16px;padding:4px 12px;cursor:pointer}.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ov{position:fixed;inset:0;background:rgba(34,30,26,.55);display:none;z-index:50;overflow:auto;padding:30px 14px}.ov.open{display:block}
+.modal{background:var(--card);border-radius:10px;max-width:820px;margin:0 auto;padding:22px;border:1px solid var(--line)}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px 14px}.fg .wide{grid-column:1/-1}
+.fg label{display:block;font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;z-index:99;opacity:0;pointer-events:none;transition:.25s}
+.toast.on{opacity:1}.toast.bad{background:var(--bad)}
+.muted{color:var(--dim)}.small{font-size:12px}pre.p{white-space:pre-wrap;background:#fbf8f1;border:1px solid var(--line);border-radius:6px;padding:12px;max-height:300px;overflow:auto;font:12px/1.5 "IBM Plex Mono",monospace}
+ol.how{padding-left:18px;margin:6px 0}ol.how li{margin:4px 0}
+@media(max-width:700px){main{padding:12px}th:nth-child(n+4),td:nth-child(n+4){display:none}.tbl-wide th,.tbl-wide td{display:table-cell!important}}
+</style></head><body>
+
+<section id="login">
+  <form class="lbox" id="lf" autocomplete="on">
+    <h1>Console</h1><p>Authorised access only.</p>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="username" required>
+    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+    <div class="err" id="lerr" role="alert"></div>
+    <button class="btn rust" style="width:100%;margin-top:6px" id="lbtn">Sign in</button>
+  </form>
+</section>
+
+<div id="app" class="hide">
+  <header class="top"><h1>Failed Startups · Console</h1><span class="sp"></span><span class="muted small" id="who"></span><a class="btn ghost sm" href="graveyard.html" target="_blank" rel="noopener">View site ↗</a><button class="btn ghost sm" id="out">Sign out</button></header>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="view"></main>
+</div>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CFG={url:"https://uveospgmehgarerlquav.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2ZW9zcGdtZWhnYXJlcmxxdWF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTk4NDAsImV4cCI6MjExMDU5NTg0MH0.yM4-8cod1TkXtxJHZNXqyWOsaL7EPZqkEk07Sb9XrCc"};
+const sb=supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true}});
+const $=s=>document.querySelector(s);
+const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(m,bad){const t=$("#toast");t.textContent=m;t.className="toast on"+(bad?" bad":"");clearTimeout(toast.t);toast.t=setTimeout(()=>t.className="toast",bad?5000:2400)}
+const CITIES={
+"Karnataka":"bengaluru,bangalore,mysuru,mysore,hubli,hubballi,mangaluru,mangalore,belagavi,belgaum,dharwad,udupi",
+"Maharashtra":"mumbai,pune,nagpur,nashik,thane,navi mumbai,aurangabad,chhatrapati sambhajinagar,kolhapur,solapur,bombay",
+"Delhi":"delhi,new delhi,delhi ncr,ncr,nct of delhi",
+"Haryana":"gurugram,gurgaon,faridabad,panipat,sonipat,ambala,hisar,rohtak,karnal,panchkula,manesar",
+"Uttar Pradesh":"noida,greater noida,ghaziabad,lucknow,kanpur,agra,varanasi,meerut,allahabad,prayagraj,bareilly,gorakhpur,aligarh,mathura",
+"Telangana":"hyderabad,secunderabad,warangal,telengana",
+"Tamil Nadu":"chennai,coimbatore,madurai,tiruchirappalli,trichy,salem,tirupur,vellore,erode,hosur,tamilnadu,madras",
+"Gujarat":"ahmedabad,surat,vadodara,baroda,rajkot,gandhinagar,bhavnagar,jamnagar,gift city,anand,morbi",
+"West Bengal":"kolkata,calcutta,howrah,siliguri,durgapur",
+"Rajasthan":"jaipur,jodhpur,udaipur,kota,ajmer,bikaner",
+"Kerala":"kochi,cochin,thiruvananthapuram,trivandrum,kozhikode,calicut,thrissur,kannur,kollam",
+"Madhya Pradesh":"indore,bhopal,gwalior,jabalpur,ujjain",
+"Punjab":"ludhiana,amritsar,jalandhar,mohali,patiala,sas nagar",
+"Chandigarh":"chandigarh",
+"Andhra Pradesh":"visakhapatnam,vizag,vijayawada,amaravati,guntur,tirupati,nellore,kakinada",
+"Odisha":"bhubaneswar,cuttack,rourkela,orissa",
+"Bihar":"patna,gaya,muzaffarpur,bhagalpur",
+"Jharkhand":"ranchi,jamshedpur,dhanbad,bokaro",
+"Chhattisgarh":"raipur,bhilai,bilaspur,chattisgarh",
+"Uttarakhand":"dehradun,haridwar,roorkee,haldwani,uttaranchal",
+"Himachal Pradesh":"shimla,manali,dharamshala,solan,himachal",
+"Assam":"guwahati,dibrugarh,jorhat,silchar",
+"Goa":"panaji,panjim,margao,vasco",
+"Jammu & Kashmir":"srinagar,jammu,jammu and kashmir",
+"Ladakh":"leh,kargil",
+"Puducherry":"puducherry,pondicherry",
+"Meghalaya":"shillong","Tripura":"agartala","Manipur":"imphal","Nagaland":"kohima,dimapur","Mizoram":"aizawl","Sikkim":"gangtok","Arunachal Pradesh":"itanagar",
+"Dadra & Nagar Haveli and Daman & Diu":"daman,diu,silvassa,dadra,dadra and nagar haveli,daman and diu",
+"Andaman & Nicobar":"port blair,andaman,andaman and nicobar",
+"Lakshadweep":"kavaratti"
+};
+// ---------- helpers shared with the import tool ----------
+const nameKey=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+function usd(s){s=String(s||"").trim();if(!s||/not publicly|n\/?a|unknown/i.test(s))return null;const t=s.toLowerCase().replace(/,/g,"");
+ const nums=t.match(/\d+(?:\.\d+)?/g);if(!nums)return null;const range=/\d\s*-\s*\d/.test(t);const v=range?(+nums[0]+ +nums[1])/2:+nums[0];
+ if(/crore|\bcr\b/.test(t))return Math.round(v*1e7/85);if(/lakh|\blac\b/.test(t))return Math.round(v*1e5/85);
+ const inr=/₹|^inr|\brs\b/i.test(s);const um=t.match(/\d\s*(billion|bn|b|million|mn|mm|m|thousand|k)\b/);let m=1;
+ if(um){const u=um[1];m=["billion","bn","b"].includes(u)?1e9:["million","mn","mm","m"].includes(u)?1e6:1e3}
+ const val=v*m;return inr?Math.round(val/85):Math.round(val)}
+function names(s){return String(s||"").split(/,|;|\band\b|&|\n/).map(x=>x.trim()).filter(x=>x&&!/not (publicly|found|available)|leadership|team$|unknown|n\/a/i.test(x))}
+function money(n){n=+n||0;return n>=1e9?"$"+(n/1e9).toFixed(2)+"B":n>=1e6?"$"+Math.round(n/1e6).toLocaleString("en-US")+"M":n>=1e3?"$"+Math.round(n/1e3)+"K":n?"$"+n:"—"}
+const MAP={};Object.keys(CITIES).forEach(st=>{MAP[st.toLowerCase()]=st;CITIES[st].split(",").forEach(c=>MAP[c.trim()]=st)});
+const norm=s=>String(s||"").toLowerCase().replace(/\(.*?\)/g," ").replace(/&/g," and ").replace(/[^a-z\s,/-]/g," ").replace(/\s+/g," ").trim();
+const KEYS=Object.keys(MAP).filter(k=>k.length>3).sort((a,b)=>b.length-a.length).map(k=>[new RegExp("\\b"+k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b"),MAP[k]]);
+function stateOf(hq){const n=norm(hq);if(!n)return null;if(MAP[n])return MAP[n];for(const p of n.split(/[,/-]/).map(x=>x.trim()).filter(Boolean))if(MAP[p])return MAP[p];for(const[re,st]of KEYS)if(re.test(n))return st;return null}
+
+// ---------- fields ----------
+const F=[["name","Name","text"],["tagline","Tagline","text","wide"],["headquarters","Headquarters","text"],["founded_year","Founded (year)","number"],["shutdown_year","Shut down (year)","number"],
+["funding_amount","Funding (as written)","text"],["funding_usd","Funding in USD (auto)","number"],["funding_stage","Funding stage","text"],["business_model","Business model","text"],
+["founders","Founders (comma separated)","list","wide"],["sector","Sector","text"],["team_size","Team size","text"],["competitors","Primary competition","text","wide"],["key_investors","Key investors","text","wide"],
+["user_base","User base","text"],["logo_url","Logo URL","text"],["website_url","Website URL","text"],["status_text","Status label","text"],["tags","Tags (comma separated)","list","wide"],
+["underlying_tech","Underlying tech","text","wide"],["failure_reason","Failure reason","area","wide"],["epitaph","Epitaph / key lesson","area","wide"],["postmortem_url","Post-mortem URL","text"],["source_url","Source URL","text"],["notes","Private notes","area","wide"]];
+const STATUSES=["published","pending","lead","hidden"];
+let S=[],SUBS=[],SUPS=[],view="overview",flt={status:"all",q:""},sortK="name",sortDir=1,user=null;
+
+// ---------- auth ----------
+async function boot(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)await enter(session.user);
+}
+$("#lf").addEventListener("submit",async e=>{e.preventDefault();$("#lerr").textContent="";$("#lbtn").disabled=true;
+  const{data,error}=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});
+  $("#lbtn").disabled=false;if(error){$("#lerr").textContent="Sign-in failed.";return}
+  await enter(data.user)});
+async function enter(u){
+  const r=await sb.rpc("is_admin");
+  if(r.error){await sb.auth.signOut();$("#lerr").textContent="Database check failed: "+r.error.message+" (run supabase/patch-02.sql)";return}
+  if(r.data!==true){await sb.auth.signOut();$("#lerr").textContent="This account is not an admin.";return}
+  user=u;$("#login").classList.add("hide");$("#app").classList.remove("hide");$("#who").textContent=u.email;
+  await loadAll();loadMiss().catch(()=>{});go(location.hash.slice(1)||"overview");
+}
+$("#out").onclick=async()=>{await sb.auth.signOut();location.reload()};
+sb.auth.onAuthStateChange(ev=>{if(ev==="SIGNED_OUT"&&user)location.reload()});
+
+async function loadAll(){
+  const[a,b,c]=await Promise.all([sb.from("startups").select("*").order("name").limit(5000),sb.from("submissions").select("*").order("created_at",{ascending:false}).limit(500),sb.from("supporters").select("*").order("created_at",{ascending:false}).limit(1000)]);
+  if(a.error)return toast("Could not load startups: "+a.error.message,1);
+  S=a.data||[];SUBS=b.data||[];SUPS=c.data||[];drawTabs();
+}
+const cnt=st=>S.filter(r=>r.status===st).length;
+function drawTabs(){
+  const T=[["overview","Overview"],["startups","Startups",cnt("published")],["review","Review",cnt("pending")],["leads","Leads",cnt("lead")],["import","AI import"],["subs","Submissions",SUBS.filter(x=>!x.reviewed).length],["supporters","Supporters"],["missed","Missed searches",MISSN],["settings","Settings"],["nav","Navigation"],["pages","Pages"],["team","Team"],["highlights","Highlights"],["backup","Backup"]];
+  $("#tabs").innerHTML=T.map(([k,l,n])=>`<button data-k="${k}" class="${view===k?"on":""}">${l}${n?`<span class="n">${n}</span>`:""}</button>`).join("");
+  $("#tabs").querySelectorAll("button").forEach(b=>b.onclick=()=>go(b.dataset.k));
+}
+function go(k){if(k!==view)flt.q="";view=k;location.hash=k;drawTabs();({overview,startups:()=>list("published"),review:()=>list("pending"),leads:()=>list("lead"),import:importView,subs:subsView,supporters:supView,backup:backupView,missed:missView,settings:settingsView,nav:navView,pages:pagesView,team:teamView,highlights:highView}[k]||overview)()}
+
+
+// ================= SITE EDITOR TABS (Phase C) =================
+let MISSN=0;
+function drive(u){const m=/\/d\/([\w-]+)/.exec(u||"")||/[?&]id=([\w-]+)/.exec(u||"");return m?"https://drive.google.com/thumbnail?id="+m[1]+"&sz=w300":(u||"")}
+const SGROUPS={"Hero & home":["site_name","tagline","hero_eyebrow","hero_title","hero_accent","hero_subtext","cta1_label","cta1_url","cta2_label","cta2_url"],
+ "Page titles":["about_title","about_intro","team_title","team_intro","contact_title","contact_intro","terms_title","terms_intro","privacy_title","privacy_intro","legal_updated"],
+ "Contact":["contact_email","contact_phone","address","contact_form_url"],"Social":["linkedin","twitter","instagram","facebook","youtube","discord","blog","whatsapp"],"Buy me a beer":["support_title","support_intro","support_api_url","support_message"],
+ "Brand & footer":["logo_url","footer_blurb","copyright"]};
+async function settingsView(){
+  const{data,error}=await sb.from("site_settings").select("key,value");if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql and seed-site.sql)</span></div>';
+  const m=Object.fromEntries(data.map(r=>[r.key,r.value]));const known=new Set(Object.values(SGROUPS).flat());
+  const extra=Object.keys(m).filter(k=>!known.has(k));const G={...SGROUPS};if(extra.length)G["Other"]=extra;
+  $("#view").innerHTML=Object.entries(G).map(([g,ks])=>`<h3 style="margin:18px 0 8px">${g}</h3><div class="card"><div class="fg">${ks.map(k=>{const v=m[k]||"";const big=v.length>70||k==="address";return`<div class="${big?"wide":""}"><label>${k}</label>${big?`<textarea data-sk="${k}">${esc(v)}</textarea>`:`<input data-sk="${k}" value="${esc(v)}">`}</div>`}).join("")}</div></div>`).join("")
+   +`<p class="muted small">Changes appear on the live site the next time a page is opened. Clearing a box clears it on the site too.</p><div class="row" style="margin-top:14px"><button class="btn rust" id="svS">Save all settings</button><button class="btn ghost" id="addK">+ New key</button></div>`;
+  $("#svS").onclick=async()=>{const rows=[...document.querySelectorAll("[data-sk]")].map(e=>({key:e.dataset.sk,value:e.value,updated_at:new Date().toISOString()}));
+    const{error}=await sb.from("site_settings").upsert(rows);toast(error?error.message:"Settings saved",!!error)};
+  $("#addK").onclick=async()=>{const k=prompt("New setting key (letters, numbers, underscore):");if(!k||!/^\w+$/.test(k))return;await sb.from("site_settings").upsert({key:k,value:""});settingsView()};
+}
+function listView({table,title,fields,defaults,groupBy,hint}){
+  return async()=>{
+    let q=sb.from(table).select("*");if(groupBy)q=q.order(groupBy);const{data,error}=await q.order("sort_order");
+    if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+'</div>';
+    const cell=(r,f)=>f.t==="bool"?`<input type="checkbox" data-f="${f.k}" ${r[f.k]?"checked":""} style="width:auto">`
+      :f.t==="sel"?`<select data-f="${f.k}">${f.o.map(o=>`<option ${r[f.k]===o?"selected":""}>${o}</option>`).join("")}</select>`
+      :f.t==="area"?`<textarea data-f="${f.k}">${esc(r[f.k])}</textarea>`:`<input data-f="${f.k}" ${f.t==="num"?'type="number"':""} value="${esc(r[f.k])}">`;
+    $("#view").innerHTML=`<div class="row"><h3 class="grow" style="margin:0">${title}</h3><button class="btn rust" id="nw">+ Add</button></div>${hint?`<p class="muted small">${hint}</p>`:""}`
+     +data.map(r=>`<div class="card" data-id="${r.id}" style="margin-bottom:12px"><div class="fg">${fields.map(f=>`<div class="${f.w?"wide":""}"><label>${f.l||f.k}</label>${cell(r,f)}</div>`).join("")}</div>
+      ${table==="site_team"&&r.photo_url?`<p><img src="${esc(drive(r.photo_url))}" style="width:56px;height:56px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'"></p>`:""}
+      <div class="row" style="margin:12px 0 0"><button class="btn sm sv">Save</button><button class="btn sm danger dl">Delete</button></div></div>`).join("");
+    $("#nw").onclick=async()=>{const{error}=await sb.from(table).insert(defaults);toast(error?error.message:"Added",!!error);if(!error)go(view)};
+    document.querySelectorAll(".card[data-id]").forEach(c=>{
+      c.querySelector(".sv").onclick=async()=>{const row={};c.querySelectorAll("[data-f]").forEach(e=>{row[e.dataset.f]=e.type==="checkbox"?e.checked:e.type==="number"?+e.value:e.value});
+        const{error}=await sb.from(table).update(row).eq("id",c.dataset.id);toast(error?error.message:"Saved",!!error)};
+      c.querySelector(".dl").onclick=async()=>{if(!confirm("Delete this row?"))return;const{error}=await sb.from(table).delete().eq("id",c.dataset.id);toast(error?error.message:"Deleted",!!error);if(!error)go(view)};
+    });
+  }}
+const navView=listView({table:"site_nav",title:"Navigation links",defaults:{label:"New link",url:"#",location:"both",grp:"Company",sort_order:99,visible:true},
+  hint:"Group is the footer column heading (for example Company or Resources). Order decides the position.",
+  fields:[{k:"label"},{k:"url"},{k:"location",t:"sel",o:["header","footer","both"]},{k:"grp",l:"group (footer column)"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+const pagesView=listView({table:"site_pages",title:"Page sections",groupBy:"page",defaults:{page:"home",heading:"New section",body:"",sort_order:99,visible:true},
+  hint:'Page = home, about, terms, privacy. Body supports **bold** and "- " bullet lines.',
+  fields:[{k:"page"},{k:"sort_order",l:"order",t:"num"},{k:"heading"},{k:"link"},{k:"visible",t:"bool"},{k:"body",t:"area",w:1}]});
+const teamView=listView({table:"site_team",title:"Team members",defaults:{name:"New member",role:"",sort_order:99,visible:true},
+  fields:[{k:"name"},{k:"role"},{k:"sort_order",l:"order",t:"num"},{k:"photo_url",l:"photo url (Drive links work)"},{k:"linkedin"},{k:"visible",t:"bool"},{k:"bio",t:"area",w:1}]});
+const highView=listView({table:"site_highlights",title:"Highlights",defaults:{value:"0",label:"New highlight",sort_order:99,visible:true},
+  hint:'The numbers on the home page. Value can be text or a number. Use auto:startups for the live count of startups and auto:avglife for the live average lifespan.',fields:[{k:"value"},{k:"label"},{k:"sort_order",l:"order",t:"num"},{k:"visible",t:"bool"}]});
+async function missView(){
+  const{data,error}=await sb.from("search_misses").select("*").order("hits",{ascending:false}).order("last_seen",{ascending:false}).limit(500);
+  if(error)return $("#view").innerHTML='<div class="card">Could not load: '+esc(error.message)+' <span class="muted small">(run supabase/phaseC.sql)</span></div>';
+  const fmt=d=>new Date(d).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  $("#view").innerHTML=`<div class="row"><h3 class="grow" style="margin:0">Searches that found nothing</h3><select id="mf" style="width:auto"><option value="new">New</option><option value="all">All</option><option value="added">Added</option><option value="ignored">Ignored</option></select><button class="btn ghost sm" id="mcsv">Export CSV</button></div>
+   <p class="muted small">Each term is counted once per visitor visit. No names or IPs are stored. Mark "added" after you list a matching startup.</p>
+   <div class="tw"><table><thead><tr><th>Search</th><th>Times</th><th>Last</th><th>Status</th><th></th></tr></thead><tbody id="mb"></tbody></table></div>`;
+  const draw=()=>{const f=$("#mf").value;const rows=data.filter(r=>f==="all"||r.status===f);
+    $("#mb").innerHTML=rows.map(r=>`<tr data-t="${esc(r.term)}"><td class="nm">${esc(r.term)}</td><td>${r.hits}</td><td class="muted">${fmt(r.last_seen)}</td><td><span class="pill">${r.status}</span></td>
+      <td style="white-space:nowrap"><button class="btn ghost sm" data-s="added">Added</button> <button class="btn ghost sm" data-s="ignored">Ignore</button> <button class="btn danger sm" data-s="del">✕</button></td></tr>`).join("")||'<tr><td colspan="5" class="muted">Nothing here.</td></tr>';
+    $("#mb").querySelectorAll("button").forEach(b=>b.onclick=async()=>{const t=b.closest("tr").dataset.t;
+      const{error}=b.dataset.s==="del"?await sb.from("search_misses").delete().eq("term",t):await sb.from("search_misses").update({status:b.dataset.s}).eq("term",t);
+      if(error)return toast(error.message,1);await loadMiss();missView()})};
+  $("#mf").onchange=draw;draw();
+  $("#mcsv").onclick=()=>{const l=["term,hits,first_seen,last_seen,status",...data.map(r=>[JSON.stringify(r.term),r.hits,r.first_seen,r.last_seen,r.status].join(","))].join("\n");
+    const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([l],{type:"text/csv"}));a.download="missed-searches.csv";a.click()};
+}
+async function loadMiss(){const r=await sb.from("search_misses").select("term",{count:"exact",head:true}).eq("status","new");MISSN=r.count||0;drawTabs()}
+
+// ---------- overview ----------
+function overview(){
+  const pub=S.filter(r=>r.status==="published");
+  const cap=pub.reduce((a,r)=>a+(+r.funding_usd||0),0);
+  const lives=pub.map(r=>r.founded_year&&r.shutdown_year&&r.shutdown_year>=r.founded_year?r.shutdown_year-r.founded_year:null).filter(x=>x!==null);
+  const unp={};let placed=0;pub.forEach(r=>{if(stateOf(r.headquarters))placed++;else if(r.headquarters)unp[r.headquarters]=(unp[r.headquarters]||0)+1});
+  const miss=(f)=>pub.filter(r=>!(Array.isArray(r[f])?r[f].length:r[f])).length;
+  const dq=[["Founders",miss("founders")],["Funding (USD)",pub.filter(r=>r.funding_usd==null).length],["Logo",miss("logo_url")],["Post-mortem link",miss("postmortem_url")],["Headquarters",miss("headquarters")],["Failure reason",miss("failure_reason")]];
+  const tot=SUPS.reduce((a,x)=>a+x.amount,0);
+  $("#view").innerHTML=`<div class="grid g4">
+   <div class="card stat"><b>${pub.length}</b><span>Published</span></div>
+   <div class="card stat"><b>${cnt("pending")}</b><span>Waiting for review</span></div>
+   <div class="card stat"><b>${cnt("lead")}</b><span>Competitor leads</span></div>
+   <div class="card stat"><b>${money(cap)}</b><span>Capital burned (public stat)</span></div>
+   <div class="card stat"><b>${lives.length?(lives.reduce((a,b)=>a+b,0)/lives.length).toFixed(1)+" yr":"—"}</b><span>Avg lifespan</span></div>
+   <div class="card stat"><b>₹${tot.toLocaleString("en-IN")}</b><span>Beer money received</span></div></div>
+  <div class="grid g2" style="margin-top:14px">
+   <div class="card"><h3>Heat-map placement</h3><p class="muted small">Public site hides this line. It lives here.</p>
+    <p><b>${placed} of ${pub.length}</b> startups placed on the map.</p>
+    ${Object.keys(unp).length?`<p class="small"><b>Not placed:</b> ${Object.entries(unp).map(([k,v])=>esc(k)+(v>1?" ×"+v:"")).join(", ")}</p><p class="muted small">Fix by editing the Headquarters to a recognised city or state.</p>`:`<p class="small" style="color:var(--ok)">Every headquarters is recognised.</p>`}</div>
+   <div class="card"><h3>Data quality (published)</h3><table style="margin-top:8px">${dq.map(([k,n])=>`<tr><td>${k}</td><td style="text-align:right"><span class="pill ${n?"pending":"published"}">${n} missing</span></td></tr>`).join("")}</table></div></div>
+  <div class="card" style="margin-top:14px"><h3>Rules</h3>
+   <div class="row" style="margin-top:10px"><label class="grow">Only add companies founded within the last <input id="maxAge" type="number" min="1" max="60" style="width:80px;display:inline-block"> years (AI import checks this)</label><button class="btn sm" id="saveAge">Save</button></div>
+   <div class="row"><button class="btn ghost sm" id="disc">Find new leads from competitor lists</button><span class="muted small">Adds any competitor not yet in the database as a lead. Duplicates are ignored automatically.</span></div></div>`;
+  sb.from("app_settings").select("value").eq("key","max_age_years").maybeSingle().then(r=>$("#maxAge").value=(r.data&&r.data.value)||10);
+  $("#saveAge").onclick=async()=>{const{error}=await sb.from("app_settings").upsert({key:"max_age_years",value:String($("#maxAge").value||10)});toast(error?error.message:"Saved",!!error)};
+  $("#disc").onclick=async()=>{const n=await discover(S);await loadAll();toast(n?n+" new lead"+(n>1?"s":"")+" added":"No new competitors found");overview()};
+}
+// competitor discovery: every competitor name not already in the database becomes a lead
+async function discover(rows){
+  const have=new Set(S.map(r=>r.name_key||nameKey(r.name)));const add=[];
+  rows.forEach(r=>names(r.competitors).forEach(c=>{const k=nameKey(c);if(k&&c.length<60&&!have.has(k)){have.add(k);add.push({name:c,status:"lead",added_by:"competitor",source_url:null})}}));
+  if(!add.length)return 0;
+  const{error}=await sb.from("startups").upsert(add,{onConflict:"name_key",ignoreDuplicates:true});
+  if(error){toast(error.message,1);return 0}return add.length;
+}
+async function syncFounders(list){
+  const n=[...new Set((list||[]).filter(Boolean))];if(!n.length)return;
+  await sb.from("founders").upsert(n.map(name=>({name})),{onConflict:"name",ignoreDuplicates:true});
+}
+
+// ---------- startups list ----------
+function list(status){
+  flt.status=status;const base=S.filter(r=>r.status===status);
+  const titles={published:"Published startups",pending:"Review queue",lead:"Competitor leads"};
+  const hint={published:"These are live on the website.",pending:"Added by AI, imports or visitors. Nothing here is public until you publish it.",lead:"Names of competitors waiting to be researched. Use AI import → Research leads."}[status];
+  $("#view").innerHTML=`<div class="row"><h2 class="grow">${titles[status]} <span class="muted small mono">${base.length}</span></h2><button class="btn rust" id="add">+ Add startup</button></div>
+   <p class="muted" style="margin-top:-4px">${hint}</p>
+   <div class="row"><input class="grow" id="q" placeholder="Search name, sector, founder, city…" value="${esc(flt.q)}">
+   ${status==="published"?"":`<button class="btn sm" id="bulkPub">Publish selected</button>`}<button class="btn ghost sm" id="bulkHide">${status==="hidden"?"":"Hide selected"}</button><button class="btn danger sm" id="bulkDel">Delete selected</button></div>
+   <div class="tw"><table class="tbl-wide"><thead><tr><th><input type="checkbox" id="all"></th>${[["name","Name"],["sector","Sector"],["founded_year","Founded"],["shutdown_year","Closed"],["funding_usd","Funding"],["status","Status"]].map(([k,l])=>`<th data-s="${k}" style="cursor:pointer">${l}${sortK===k?(sortDir>0?" ▲":" ▼"):""}</th>`).join("")}<th></th></tr></thead><tbody id="tb"></tbody></table></div>`;
+  const draw=()=>{const q=flt.q.toLowerCase();
+    let r=base.filter(x=>!q||[x.name,x.sector,x.headquarters,(x.founders||[]).join(" "),x.tagline].join(" ").toLowerCase().includes(q));
+    r.sort((a,b)=>{const x=a[sortK]??"",y=b[sortK]??"";return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y)))*sortDir});
+    $("#tb").innerHTML=r.map(x=>`<tr><td><input type="checkbox" class="sel" value="${x.id}"></td><td class="nm">${esc(x.name)}</td><td>${esc(x.sector||"")}</td><td class="mono">${x.founded_year||""}</td><td class="mono">${x.shutdown_year||""}</td><td class="mono">${x.funding_usd!=null?money(x.funding_usd):`<span class="muted">${esc(x.funding_amount||"")}</span>`}</td><td><span class="pill ${x.status}">${x.status}</span></td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${x.id}">Edit</button> ${x.status==="published"?`<button class="btn ghost sm" data-h="${x.id}">Hide</button>`:`<button class="btn sm" data-p="${x.id}">Publish</button>`}</td></tr>`).join("")||`<tr><td colspan="8" class="muted" style="padding:24px">Nothing here.</td></tr>`;
+    $("#tb").querySelectorAll("[data-e]").forEach(b=>b.onclick=()=>edit(b.dataset.e));
+    $("#tb").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>setStatus([b.dataset.p],"published"));
+    $("#tb").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>setStatus([b.dataset.h],"hidden"));
+  };
+  draw();
+  $("#q").oninput=e=>{flt.q=e.target.value;draw()};
+  $("#view").querySelectorAll("th[data-s]").forEach(t=>t.onclick=()=>{sortDir=sortK===t.dataset.s?-sortDir:1;sortK=t.dataset.s;list(status)});
+  $("#all").onchange=e=>document.querySelectorAll(".sel").forEach(c=>c.checked=e.target.checked);
+  const picked=()=>[...document.querySelectorAll(".sel:checked")].map(c=>c.value);
+  $("#add").onclick=()=>edit(null,status);
+  if($("#bulkPub"))$("#bulkPub").onclick=()=>picked().length?setStatus(picked(),"published"):toast("Select rows first",1);
+  $("#bulkHide").onclick=()=>picked().length?setStatus(picked(),"hidden"):toast("Select rows first",1);
+  $("#bulkDel").onclick=async()=>{const p=picked();if(!p.length)return toast("Select rows first",1);if(!confirm("Delete "+p.length+" row(s) permanently?"))return;
+    const{error}=await sb.from("startups").delete().in("id",p);if(error)return toast(error.message,1);await loadAll();go(view);toast("Deleted")};
+}
+async function setStatus(ids,st){
+  const{error}=await sb.from("startups").update({status:st}).in("id",ids);if(error)return toast(error.message,1);
+  await sb.from("activity_log").insert({actor:user.email,action:"status:"+st,detail:{ids}});
+  if(st==="published"){await discover(S.filter(r=>ids.includes(r.id)))}
+  await loadAll();go(view);toast(ids.length+" → "+st)}
+
+// ---------- edit modal ----------
+function openModal(h){$("#modal").innerHTML=h;$("#ov").classList.add("open")}
+function closeModal(){$("#ov").classList.remove("open")}
+$("#ov").addEventListener("mousedown",e=>{if(e.target.id==="ov")closeModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeModal()});
+function edit(id,defStatus){
+  const r=id?S.find(x=>x.id===id):{status:defStatus||"pending",status_text:"Failed",founders:[],tags:[]};
+  openModal(`<div class="row"><h2 class="grow">${id?"Edit":"Add"} startup</h2><button class="btn ghost sm" onclick="closeModal()">Close</button></div>
+  <form id="ef"><div class="fg">${F.map(([k,l,t,w])=>{const v=Array.isArray(r[k])?r[k].join(", "):(r[k]??"");
+   return `<div class="${w||""}"><label for="f_${k}">${l}</label>${t==="area"?`<textarea id="f_${k}" name="${k}">${esc(v)}</textarea>`:`<input id="f_${k}" name="${k}" type="${t==="number"?"number":"text"}" value="${esc(v)}">`}</div>`}).join("")}
+   <div><label for="f_status">Visibility</label><select id="f_status" name="status">${STATUSES.map(s=>`<option ${r.status===s?"selected":""}>${s}</option>`).join("")}</select></div></div>
+  <div class="row" style="margin-top:16px"><button class="btn rust">Save</button>${id?`<button type="button" class="btn danger sm" id="del">Delete</button>`:""}<span class="muted small">Funding in USD fills itself from “Funding (as written)” if left blank. Founders are added to the founders directory automatically.</span></div></form>`);
+  $("#ef").onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.target),o={};
+    F.forEach(([k,l,t])=>{let v=(fd.get(k)||"").toString().trim();
+      if(t==="number")o[k]=v===""?null:+v;else if(t==="list")o[k]=v?v.split(",").map(x=>x.trim()).filter(Boolean):[];else o[k]=v===""?null:v});
+    o.status=fd.get("status");
+    if(!o.name)return toast("Name is required",1);
+    if(o.funding_usd==null&&o.funding_amount)o.funding_usd=usd(o.funding_amount);
+    if(id&&r.funding_amount!==o.funding_amount&&fd.get("funding_usd")==String(r.funding_usd??"")&&o.funding_amount)o.funding_usd=usd(o.funding_amount);
+    const q=id?sb.from("startups").update(o).eq("id",id):sb.from("startups").insert(o);
+    const{error}=await q;
+    if(error)return toast(error.code==="23505"?"A startup with this name already exists.":error.message,1);
+    await syncFounders(o.founders);await sb.from("activity_log").insert({actor:user.email,action:id?"edit":"add",detail:{name:o.name}});
+    closeModal();await loadAll();await discover([o]);await loadAll();go(view);toast("Saved")};
+  if(id)$("#del").onclick=async()=>{if(!confirm("Delete "+r.name+" permanently?"))return;const{error}=await sb.from("startups").delete().eq("id",id);if(error)return toast(error.message,1);closeModal();await loadAll();go(view);toast("Deleted")};
+}
+
+// ---------- AI import ----------
+const SCHEMA=`{"name":"","tagline":"one sentence","headquarters":"City, State, Country","founded_year":2018,"shutdown_year":2023,"funding_amount":"$5 Mn","funding_usd":5000000,"funding_stage":"Seed","business_model":"","founders":["Full Name"],"sector":"","team_size":"11-50","competitors":"A, B, C","key_investors":"","user_base":"","website_url":"","tags":["tag1","tag2"],"underlying_tech":"","failure_reason":"","epitaph":"one-sentence lesson","postmortem_url":"","source_url":"https://... (REQUIRED, a page that confirms the shutdown)"}`;
+let impMode="new",parsed=[];
+async function importView(){
+  const{data}=await sb.from("app_settings").select("value").eq("key","max_age_years").maybeSingle();const age=+(data&&data.value)||10;
+  const leads=S.filter(r=>r.status==="lead");
+  $("#view").innerHTML=`<h2>AI import</h2><p class="muted">Works with any free AI (Gemini, ChatGPT, Claude, Perplexity). Copy the prompt, paste it there, copy the answer back here.</p>
+  <div class="grid g2"><div class="card"><h3>1 · Make the prompt</h3>
+   <div class="row" style="margin-top:10px"><select id="mode" style="max-width:260px"><option value="new">Find new failed startups</option><option value="leads">Research competitor leads</option></select></div>
+   <div id="opts"></div><button class="btn rust" id="mk">Generate prompt</button>
+   <pre class="p hide" id="pr"></pre><button class="btn ghost sm hide" id="cp" style="margin-top:8px">Copy prompt</button></div>
+  <div class="card"><h3>2 · Paste the AI's answer</h3><textarea id="paste" style="min-height:200px" placeholder='Paste the JSON here (a list starting with [ )'></textarea>
+   <div class="row" style="margin-top:10px"><button class="btn" id="parse">Check it</button><span class="muted small">Nothing is saved until you press Import.</span></div></div></div>
+  <div id="prev" style="margin-top:16px"></div>`;
+  const opts=()=>{impMode=$("#mode").value;$("#opts").innerHTML=impMode==="new"
+    ?`<div class="fg" style="margin:10px 0"><div><label>How many</label><input id="n" type="number" value="10" min="1" max="30"></div><div><label>Focus (optional)</label><input id="focus" placeholder="e.g. fintech, edtech, 2023 shutdowns"></div></div>`
+    :`<p class="small muted">Pick up to 10 leads (${leads.length} waiting):</p><div class="tw" style="max-height:180px;margin-bottom:10px"><table>${leads.map(l=>`<tr><td><input type="checkbox" class="lp" value="${esc(l.name)}"></td><td>${esc(l.name)}</td></tr>`).join("")}</table></div>`};
+  $("#mode").onchange=opts;opts();
+  $("#mk").onclick=()=>{let t;const known=S.filter(r=>r.status!=="lead").map(r=>r.name).slice(0,600).join(", ");const yr=new Date().getFullYear();
+   const rules=`RULES
+- Indian startups only (or startups with a clear India link). Real companies only. Never invent a company, a number, a founder or a link.
+- Founded in ${yr-age} or later (not older than ${age} years). The company must have actually shut down or been wound up.
+- "source_url" is required and must be a real article/filing that confirms the shutdown. If you cannot find one, leave the company out.
+- If a field is unknown use null (or [] for lists). funding_usd is a plain number in US dollars (convert rupees at about 85 per dollar); funding_amount keeps the original wording.
+- founders: one full name per array item.
+- Output ONLY a JSON array. No commentary, no markdown fences.
+
+Each item must follow this shape:
+${SCHEMA}`;
+   if(impMode==="new"){const n=$("#n").value||10,f=$("#focus").value.trim();
+    t=`Act as a careful researcher for "Failed Startups", a site documenting failed Indian startups.\n\nFind ${n} failed startups${f?" focused on: "+f:""} that are NOT in this list already:\n${known}\n\n${rules}`}
+   else{const p=[...document.querySelectorAll(".lp:checked")].map(c=>c.value).slice(0,10);if(!p.length)return toast("Tick at least one lead",1);
+    t=`Act as a careful researcher for "Failed Startups", a site documenting failed Indian startups.\n\nFor each company below, check whether it has shut down. Return an entry ONLY for those that have actually shut down; skip the rest.\nCompanies: ${p.join(", ")}\n\n${rules}`}
+   $("#pr").textContent=t;$("#pr").classList.remove("hide");$("#cp").classList.remove("hide")};
+  $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText($("#pr").textContent);toast("Prompt copied")}catch(e){toast("Select and copy it manually",1)}};
+  $("#parse").onclick=()=>check(age);
+}
+function check(age){
+  let txt=$("#paste").value.trim().replace(/^```(?:json)?/i,"").replace(/```$/,"").trim();
+  const a=txt.indexOf("["),b=txt.lastIndexOf("]");if(a<0||b<0)return toast("Could not find a [ ... ] list in that text.",1);
+  let arr;try{arr=JSON.parse(txt.slice(a,b+1))}catch(e){return toast("That is not valid JSON: "+e.message,1)}
+  if(!Array.isArray(arr)||!arr.length)return toast("The list is empty.",1);
+  const byKey=new Map(S.map(r=>[r.name_key||nameKey(r.name),r])),seen=new Set(),yr=new Date().getFullYear();
+  parsed=arr.map(x=>{const o={};F.forEach(([k,l,t])=>{let v=x[k];if(t==="list")o[k]=Array.isArray(v)?v.map(String):v?names(v):[];else if(t==="number")o[k]=v==null||v===""?null:(+v||null);else o[k]=v==null||v===""?null:String(v).trim()});
+    if(Array.isArray(x.competitors))o.competitors=x.competitors.join(", ");
+    if(o.funding_usd==null&&o.funding_amount)o.funding_usd=usd(o.funding_amount);
+    const k=nameKey(o.name),ex=byKey.get(k);let st="new",why="",ok=true;
+    if(!o.name){st="invalid";why="no name";ok=false}
+    else if(seen.has(k)){st="duplicate";why="repeated in this list";ok=false}
+    else if(ex&&ex.status==="lead"){st="fills lead";why="will complete the lead you already have"}
+    else if(ex){st="duplicate";why="already "+ex.status;ok=false}
+    else if(!o.source_url){st="no source";why="missing source_url";ok=false}
+    if(ok&&o.founded_year&&o.founded_year<yr-age){st="too old";why="founded "+o.founded_year+" (limit "+(yr-age)+")";ok=false}
+    seen.add(k);o._st=st;o._why=why;o._ex=ex;o._ok=ok;return o});
+  $("#prev").innerHTML=`<div class="card"><h3>3 · Check and import</h3><p class="muted small">Ticked rows go in as <b>Pending</b> for your review. Untick anything you don't want. Greyed rows were skipped by the rules, you can still tick them.</p>
+  <div class="tw"><table><thead><tr><th></th><th>Name</th><th>Founded</th><th>Closed</th><th>Funding</th><th>Result</th></tr></thead><tbody>${parsed.map((o,i)=>`<tr style="${o._ok?"":"opacity:.6"}"><td><input type="checkbox" class="ip" value="${i}" ${o._ok?"checked":""}></td><td class="nm">${esc(o.name)}</td><td class="mono">${o.founded_year||""}</td><td class="mono">${o.shutdown_year||""}</td><td class="mono">${o.funding_usd!=null?money(o.funding_usd):esc(o.funding_amount||"")}</td><td><span class="pill ${o._ok?"published":"bad"}">${o._st}</span> <span class="muted small">${esc(o._why)}</span></td></tr>`).join("")}</tbody></table></div>
+  <div class="row" style="margin-top:12px"><button class="btn rust" id="go">Import ticked rows</button></div></div>`;
+  $("#go").onclick=async()=>{const pick=[...document.querySelectorAll(".ip:checked")].map(c=>parsed[+c.value]);if(!pick.length)return toast("Nothing ticked",1);
+    $("#go").disabled=true;let ins=0,upd=0,fail=0;
+    for(const o of pick){const row={...o};["_st","_why","_ex","_ok"].forEach(k=>delete row[k]);row.status="pending";row.added_by=row.added_by||"ai";if(!row.status_text)row.status_text="Failed";
+      if(o._ex&&o._ex.status==="lead"){const{error}=await sb.from("startups").update({...row,name:o._ex.name,added_by:"ai"}).eq("id",o._ex.id);error?fail++:upd++}
+      else{row.added_by="ai";const{error}=await sb.from("startups").insert(row);error?fail++:ins++}
+      await syncFounders(row.founders)}
+    await sb.from("activity_log").insert({actor:user.email,action:"ai-import",detail:{ins,upd,fail}});
+    await loadAll();toast(`${ins} added, ${upd} leads completed${fail?", "+fail+" failed":""}`,!!fail);go("review")};
+}
+
+// ---------- submissions ----------
+function subsView(){
+  $("#view").innerHTML=`<h2>Visitor submissions <span class="muted small mono">${SUBS.length}</span></h2><p class="muted">“Submit a postmortem” entries from the website land here. Nothing is public until you turn one into a startup and publish it.</p>
+  ${SUBS.map(s=>{const p=s.payload||{};return `<div class="card" style="margin-bottom:10px;${s.reviewed?"opacity:.55":""}"><div class="row" style="margin:0"><b class="grow">${esc(p.startupName||"(no name)")}</b><span class="muted small mono">${new Date(s.created_at).toLocaleString()}</span>${s.reviewed?`<span class="pill">reviewed</span>`:""}</div>
+  <p class="small muted" style="margin:4px 0">From ${esc(p.submitterName||"")} · ${esc(p.submitterEmail||"")} · ${esc(p.relationship||"")}</p>
+  <p style="margin:6px 0">${esc(p.tagline||"")} ${p.sector?`<span class="pill">${esc(p.sector)}</span>`:""} ${p.foundedYear?esc(p.foundedYear):""}${p.shutdownYear?" → "+esc(p.shutdownYear):""}</p>
+  <p class="small">${esc(p.failureReason||"")}</p>${p.notes?`<p class="small muted">${esc(p.notes)}</p>`:""}
+  <div class="row" style="margin:8px 0 0"><button class="btn sm" data-c="${s.id}">Make pending startup</button><button class="btn ghost sm" data-r="${s.id}">${s.reviewed?"Mark unread":"Mark reviewed"}</button><button class="btn ghost sm" data-d="${s.id}">Delete</button></div></div>`}).join("")||`<div class="card muted">No submissions yet.</div>`}`;
+  document.querySelectorAll("[data-r]").forEach(b=>b.onclick=async()=>{const s=SUBS.find(x=>x.id===b.dataset.r);await sb.from("submissions").update({reviewed:!s.reviewed}).eq("id",s.id);await loadAll();subsView()});
+  document.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this submission?"))return;await sb.from("submissions").delete().eq("id",b.dataset.d);await loadAll();subsView()});
+  document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{const s=SUBS.find(x=>x.id===b.dataset.c),p=s.payload||{};
+    const{error}=await sb.from("startups").insert({name:(p.startupName||"").trim(),tagline:p.tagline||null,sector:p.sector||null,founded_year:+p.foundedYear||null,shutdown_year:+p.shutdownYear||null,website_url:p.startupWebsite||null,failure_reason:p.failureReason||null,notes:`Submitted by ${p.submitterName||""} <${p.submitterEmail||""}> (${p.relationship||""}). ${p.notes||""}`,status:"pending",added_by:"submission",status_text:"Failed"});
+    if(error)return toast(error.code==="23505"?"Already in the database":error.message,1);
+    await sb.from("submissions").update({reviewed:true}).eq("id",s.id);await loadAll();toast("Added to Review");go("review")});
+}
+
+// ---------- supporters ----------
+function supView(){
+  const tot=SUPS.reduce((a,x)=>a+x.amount,0);
+  $("#view").innerHTML=`<h2>Supporters</h2><div class="grid g4" style="margin:12px 0"><div class="card stat"><b>₹${tot.toLocaleString("en-IN")}</b><span>Total received</span></div><div class="card stat"><b>${SUPS.length}</b><span>Payments</span></div></div>
+  <div class="tw"><table><thead><tr><th>When</th><th>Name</th><th>Amount</th><th>Payment id</th></tr></thead><tbody>${SUPS.map(s=>`<tr><td class="mono">${new Date(s.created_at).toLocaleString()}</td><td>${esc(s.name)}</td><td class="mono">₹${s.amount}</td><td class="mono muted">${esc(s.payment_id)}</td></tr>`).join("")||`<tr><td colspan="4" class="muted" style="padding:20px">No payments yet.</td></tr>`}</tbody></table></div>`;
+}
+
+// ---------- backup ----------
+function dl(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+function backupView(){
+  $("#view").innerHTML=`<h2>Backup & export</h2><div class="grid g2" style="margin-top:12px">
+  <div class="card"><h3>Download everything</h3><p class="muted small">The free Supabase plan has no automatic backups. Download one now and then.</p><div class="row"><button class="btn" id="bj">Full backup (JSON)</button><button class="btn ghost" id="bc">Startups (CSV)</button></div></div>
+  <div class="card"><h3>Restore / bulk add</h3><p class="muted small">Paste a JSON backup list to re-insert rows. Existing names are skipped.</p><textarea id="rs" placeholder="[ {...}, {...} ]"></textarea><div class="row" style="margin-top:8px"><button class="btn ghost" id="rb">Restore</button></div></div></div>`;
+  $("#bj").onclick=()=>dl("failed-startups-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({startups:S,submissions:SUBS},null,1),"application/json");
+  $("#bc").onclick=()=>{const cols=F.map(f=>f[0]).concat(["status"]);const c=v=>`"${String(Array.isArray(v)?v.join(", "):v??"").replace(/"/g,'""')}"`;
+    dl("startups-"+new Date().toISOString().slice(0,10)+".csv",[cols.join(",")].concat(S.map(r=>cols.map(k=>c(r[k])).join(","))).join("\n"),"text/csv")};
+  $("#rb").onclick=async()=>{let a;try{a=JSON.parse($("#rs").value);a=a.startups||a}catch(e){return toast("Invalid JSON",1)}
+    const rows=a.map(r=>{const o={...r};["id","name_key","created_at","updated_at"].forEach(k=>delete o[k]);return o});
+    const{error}=await sb.from("startups").upsert(rows,{onConflict:"name_key",ignoreDuplicates:true});if(error)return toast(error.message,1);await loadAll();toast("Restored")};
+}
+boot();
+</script></body></html>
